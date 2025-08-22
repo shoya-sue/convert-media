@@ -21,7 +21,7 @@ export default function ImageCompress() {
     []
   )
   type FormValues = z.infer<typeof schema>
-  const { register, handleSubmit, watch } = useForm<FormValues>({
+  const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { format: 'auto', quality: 0.75 },
   })
@@ -56,36 +56,33 @@ export default function ImageCompress() {
         <h1>画像 圧縮</h1>
         <p className="muted">初心者でも簡単：おすすめプリセットを選ぶだけでOK。細かい調整は「詳細設定」で変更できます。</p>
         <div className="controls">
-          <PresetButtons onSelect={(q) => setValueQuality(q)} current={watch('quality') ?? 0.75} />
+          <PresetButtons onSelect={(q) => setValue('quality', q, { shouldDirty: true })} current={watch('quality') ?? 0.75} />
         </div>
-        <Dropzone accept="image/*" onFiles={setFiles} />
+        <Dropzone accept="image/*" onFiles={setFiles} files={files} />
         <form className="controls" onSubmit={onProcess}>
           <details>
             <summary className="muted">詳細設定</summary>
             <div className="controls">
-              <label>
-                出力形式
-                <select {...register('format')}>
+              <div className="field">
+                <div className="field-label">出力形式</div>
+                <select className="select" {...register('format')}>
                   <option value="auto">おすすめ（自動）</option>
                   <option value="jpeg">JPEG</option>
                   <option value="png">PNG</option>
                   <option value="webp">WebP</option>
                 </select>
-              </label>
-              <label>
-                品質 ({Math.round((watch('quality') ?? 0.75) * 100)})
-                <input type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
-              </label>
+              </div>
+              <div className="field">
+                <div className="field-label">品質: {Math.round((watch('quality') ?? 0.75) * 100)}</div>
+                <input className="range" type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
+              </div>
             </div>
           </details>
           <button className="btn btn-primary" type="submit" disabled={!files.length}>処理開始</button>
         </form>
         <ProgressBar value={progress} />
       </div>
-      <div className="card">
-        <h3>入力ファイル</h3>
-        <List files={files} />
-      </div>
+      {/* 入力ファイルはDropzone内に表示する方針 */}
       {!!results.length && (
         <div className="card">
           <h3>結果</h3>
@@ -150,11 +147,4 @@ function PresetButtons({ onSelect, current }: { onSelect: (q: number) => void; c
   )
 }
 
-function setValueQuality(val: number) {
-  const input = document.querySelector('input[type="range"]') as HTMLInputElement | null
-  if (input) {
-    input.value = String(val)
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    input.dispatchEvent(new Event('change', { bubbles: true }))
-  }
-}
+// RHFのsetValueを使うため、直接DOMを触るハックは不要

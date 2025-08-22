@@ -55,6 +55,8 @@ h1 { margin: 0 0 12px; font-size: 22px; letter-spacing: .2px; }
 /* Dropzone */
 .dropzone { border: 1px dashed #314061; border-radius: 14px; padding: 24px; text-align: center; color: var(--muted); cursor: pointer; background: rgba(255,255,255,0.02); }
 .dropzone.over { border-color: var(--primary-2); color: var(--text); box-shadow: 0 0 0 2px rgba(34,211,238,0.15) inset; }
+.dz-files { list-style: none; padding: 8px 0 0; margin: 0; color: var(--text); font-size: 13px; }
+.dz-files li { opacity: .9; }
 
 .controls { margin: 14px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .file-list { margin-top: 12px; padding-left: 18px; }
@@ -69,3 +71,9 @@ h1 { margin: 0 0 12px; font-size: 22px; letter-spacing: .2px; }
 .segment { display: inline-grid; grid-auto-flow: column; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--panel-stroke); border-radius: 12px; padding: 4px; }
 .segment button { border: none; background: transparent; color: var(--muted); padding: 8px 12px; border-radius: 8px; cursor: pointer; }
 .segment button[aria-pressed="true"] { color: #0a0f15; background: linear-gradient(90deg, var(--primary), var(--primary-2)); font-weight: 700; }
+
+/* Fields */
+.field { display: grid; gap: 6px; min-width: 240px; }
+.field .field-label { font-size: 12px; color: var(--muted); }
+.select { appearance: none; background: rgba(255,255,255,0.04); color: var(--text); border: 1px solid var(--panel-stroke); border-radius: 10px; padding: 8px 10px; }
+.range { accent-color: var(--primary); width: 200px; }

@@ -4,9 +4,11 @@ type Props = {
   accept?: string
   multiple?: boolean
   onFiles: (files: File[]) => void
+  children?: React.ReactNode
+  files?: File[]
 }
 
-export default function Dropzone({ accept, multiple = true, onFiles }: Props) {
+export default function Dropzone({ accept, multiple = true, onFiles, children, files }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [over, setOver] = React.useState(false)
 
@@ -44,7 +46,14 @@ export default function Dropzone({ accept, multiple = true, onFiles }: Props) {
         style={{ display: 'none' }}
       />
       <p>ファイルをドラッグ＆ドロップ、またはクリックして選択</p>
+      {files && files.length > 0 && (
+        <ul className="dz-files">
+          {files.map((f) => (
+            <li key={f.name}>{f.name}</li>
+          ))}
+        </ul>
+      )}
+      {children}
     </div>
   )
 }
-
