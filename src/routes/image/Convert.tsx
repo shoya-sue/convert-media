@@ -12,7 +12,7 @@ import { useState as useReactState } from 'react'
 export default function ImageConvert() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
-  const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
+  const [results, setResults] = useState<{ name: string; blob: Blob; info: string }[]>([])
 
   const schema = useMemo(
     () =>
@@ -28,20 +28,22 @@ export default function ImageConvert() {
   type FormValues = z.infer<typeof schema>
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { target: 'webp', quality: 0.9, effort: params.effort ?? 4, lossless: params.lossless ?? false, chroma: params.chroma ?? '420' , lossless: false, chroma: '420' },
+    defaultValues: { target: 'webp', quality: 0.9, effort: 4, lossless: false, chroma: '420' },
   })
 
   const onProcess = handleSubmit(async (values) => {
     setResults([])
     setProgress(0)
-    const out: { name: string; blob: Blob }[] = []
+    const out: { name: string; blob: Blob; info: string }[] = []
     const useSquoosh = await isSquooshAvailable()
     if (useSquoosh) {
       for (let i = 0; i < files.length; i++) {
         const f = files[i]
         const res = await runSquooshWorkerOnce(f, { target: values.target, quality: values.quality })
         const name = buildOutputName(f.name, values)
-        out.push({ name, blob: new Blob([res.data], { type: res.mime }) })
+        const blob = new Blob([res.data], { type: res.mime })
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.max(0, Math.round((1 - blob.size / f.size)*100))}%）`
+        out.push({ name, blob, info })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else {
@@ -49,7 +51,8 @@ export default function ImageConvert() {
         const f = files[i]
         const blob = await convertImageFile(f, values)
         const name = buildOutputName(f.name, values)
-        out.push({ name, blob })
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.max(0, Math.round((1 - blob.size / f.size)*100))}%）`
+        out.push({ name, blob, info })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     }
@@ -117,7 +120,7 @@ export default function ImageConvert() {
           <ul>
             {results.map((r) => (
               <li key={r.name}>
-                {r.name} <DownloadLink name={r.name} blob={r.blob} />
+                {r.name} <span className="muted">{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
               </li>
             ))}
           </ul>
