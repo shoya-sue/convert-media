@@ -51,31 +51,43 @@ export default function ImageCompress() {
   }
 
   return (
-    <div>
-      <h1>画像 圧縮</h1>
-      <Dropzone accept="image/*" onFiles={setFiles} />
-      <form className="controls" onSubmit={onProcess}>
-        <label>
-          出力形式
-          <select {...register('format')}>
-            <option value="auto">auto</option>
-            <option value="jpeg">jpeg</option>
-            <option value="png">png</option>
-            <option value="webp">webp</option>
-          </select>
-        </label>
-        <label style={{ marginLeft: 12 }}>
-          品質 ({Math.round((watch('quality') ?? 0.75) * 100)})
-          <input type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
-        </label>
-        <button type="submit" disabled={!files.length} style={{ marginLeft: 12 }}>
-          処理開始
-        </button>
-      </form>
-      <ProgressBar value={progress} />
-      <List files={files} />
+    <div className="stack">
+      <div className="card">
+        <h1>画像 圧縮</h1>
+        <p className="muted">初心者でも簡単：おすすめプリセットを選ぶだけでOK。細かい調整は「詳細設定」で変更できます。</p>
+        <div className="controls">
+          <PresetButtons onSelect={(q) => setValueQuality(q)} current={watch('quality') ?? 0.75} />
+        </div>
+        <Dropzone accept="image/*" onFiles={setFiles} />
+        <form className="controls" onSubmit={onProcess}>
+          <details>
+            <summary className="muted">詳細設定</summary>
+            <div className="controls">
+              <label>
+                出力形式
+                <select {...register('format')}>
+                  <option value="auto">おすすめ（自動）</option>
+                  <option value="jpeg">JPEG</option>
+                  <option value="png">PNG</option>
+                  <option value="webp">WebP</option>
+                </select>
+              </label>
+              <label>
+                品質 ({Math.round((watch('quality') ?? 0.75) * 100)})
+                <input type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
+              </label>
+            </div>
+          </details>
+          <button className="btn btn-primary" type="submit" disabled={!files.length}>処理開始</button>
+        </form>
+        <ProgressBar value={progress} />
+      </div>
+      <div className="card">
+        <h3>入力ファイル</h3>
+        <List files={files} />
+      </div>
       {!!results.length && (
-        <div style={{ marginTop: 12 }}>
+        <div className="card">
           <h3>結果</h3>
           <ul>
             {results.map((r) => (
@@ -85,7 +97,7 @@ export default function ImageCompress() {
               </li>
             ))}
           </ul>
-          <button onClick={onDownloadAll}>すべてZIPでダウンロード</button>
+          <button className="btn btn-ghost" onClick={onDownloadAll}>すべてZIPでダウンロード</button>
         </div>
       )}
     </div>
@@ -117,4 +129,32 @@ function DownloadLink({ name, blob }: { name: string; blob: Blob }) {
       ダウンロード
     </a>
   )
+}
+
+function PresetButtons({ onSelect, current }: { onSelect: (q: number) => void; current: number }) {
+  // マッピング：初心者向けに「軽量」「バランス」「高画質」
+  const presets = [
+    { key: 'small', label: '軽量（小さく）', q: 0.6 },
+    { key: 'balanced', label: 'バランス', q: 0.75 },
+    { key: 'high', label: '高画質（大きめ）', q: 0.9 },
+  ]
+  const nearest = presets.reduce((a, b) => (Math.abs(b.q - current) < Math.abs(a.q - current) ? b : a), presets[0])
+  return (
+    <div className="segment" role="group" aria-label="品質プリセット">
+      {presets.map((p) => (
+        <button type="button" key={p.key} aria-pressed={nearest.key === p.key} onClick={() => onSelect(p.q)}>
+          {p.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function setValueQuality(val: number) {
+  const input = document.querySelector('input[type="range"]') as HTMLInputElement | null
+  if (input) {
+    input.value = String(val)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  }
 }

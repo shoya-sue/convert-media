@@ -12,8 +12,7 @@ describe('ImageCompress page', () => {
       </MemoryRouter>
     )
     expect(screen.getByText('画像 圧縮')).toBeInTheDocument()
-    expect(screen.getByText('出力形式')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '処理開始' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: '品質プリセット' })).toBeInTheDocument()
   })
 })
-
