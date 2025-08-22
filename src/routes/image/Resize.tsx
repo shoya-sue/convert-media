@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
 import { useForm } from 'react-hook-form'
@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { resizeImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
 import ImagePreview from '../../components/ImagePreview'
+import { loadJSON, saveJSON } from '../../lib/persist'
 
 export default function ImageResize() {
   const [files, setFiles] = useState<File[]>([])
@@ -23,10 +24,15 @@ export default function ImageResize() {
     []
   )
   type FormValues = z.infer<typeof schema>
+  const defaults: FormValues = loadJSON<FormValues>('form:image:resize', { longEdge: 1920, format: 'auto', quality: 0.9, effort: 4, lossless: false, chroma: '420' } as any)
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { longEdge: 1920, format: 'auto', quality: 0.8 },
+    defaultValues: defaults,
   })
+  useEffect(()=>{
+    const sub = watch((v)=> saveJSON('form:image:resize', v as any))
+    return () => sub.unsubscribe()
+  },[watch])
 
   const onProcess = handleSubmit(async (values) => {
     setResults([])

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
 import { useForm } from 'react-hook-form'
@@ -8,6 +8,7 @@ import { convertImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
 import ImagePreview from '../../components/ImagePreview'
 import { useState as useReactState } from 'react'
+import { loadJSON, saveJSON } from '../../lib/persist'
 
 export default function ImageConvert() {
   const [files, setFiles] = useState<File[]>([])
@@ -26,10 +27,15 @@ export default function ImageConvert() {
     []
   )
   type FormValues = z.infer<typeof schema>
+  const defaults: FormValues = loadJSON<FormValues>('form:image:convert', { target: 'webp', quality: 0.9, effort: 4, lossless: false, chroma: '420' } as any)
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { target: 'webp', quality: 0.9, effort: 4, lossless: false, chroma: '420' },
+    defaultValues: defaults,
   })
+  useEffect(()=>{
+    const sub = watch((v)=> saveJSON('form:image:convert', v as any))
+    return () => sub.unsubscribe()
+  },[watch])
 
   const onProcess = handleSubmit(async (values) => {
     setResults([])

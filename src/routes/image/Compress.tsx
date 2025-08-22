@@ -1,12 +1,13 @@
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { compressImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
 import ImagePreview from '../../components/ImagePreview'
+import { loadJSON, saveJSON } from '../../lib/persist'
 
 export default function ImageCompress() {
   const [files, setFiles] = useState<File[]>([])
@@ -22,10 +23,15 @@ export default function ImageCompress() {
     []
   )
   type FormValues = z.infer<typeof schema>
+  const defaults: FormValues = loadJSON<FormValues>('form:image:compress', { format: 'auto', quality: 0.88 } as any)
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { format: 'auto', quality: 0.88 },
+    defaultValues: defaults,
   })
+  useEffect(()=>{
+    const sub = watch((v)=> { saveJSON('form:image:compress', v as any) })
+    return () => sub.unsubscribe()
+  },[watch])
 
   const onProcess = handleSubmit(async (values) => {
     setResults([])

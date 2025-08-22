@@ -1,5 +1,5 @@
 // 旧ダミー実装を削除
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
 import { createVideoThumbnail, createVideoThumbnails } from '../../lib/video'
@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { isFfmpegAvailable, transcodeVideo } from '../../lib/video'
+import { loadJSON, saveJSON } from '../../lib/persist'
 
 export default function VideoConvert() {
   const [files, setFiles] = useState<File[]>([])
@@ -25,7 +26,9 @@ export default function VideoConvert() {
     crf: z.number().int().min(18).max(40).default(23),
   }), [])
   type FormValues = z.infer<typeof schema>
-  const { register, handleSubmit, watch } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { target: 'mp4', crf: 23 } })
+  const defaults: FormValues = loadJSON<FormValues>('form:video:convert', { target: 'mp4', crf: 23 } as any)
+  const { register, handleSubmit, watch } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults })
+  useEffect(()=>{ const sub = watch(v=> saveJSON('form:video:convert', v as any)); return ()=> sub.unsubscribe() },[watch])
 
   const onStart = handleSubmit(async (v) => {
     setRunning(true)

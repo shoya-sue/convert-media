@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
 import { createVideoThumbnail, createVideoThumbnails } from '../../lib/video'
+import { loadNumber, saveNumber } from '../../lib/persist'
 
 export default function VideoCompress() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
-  const [crf, setCrf] = useState(23)
+  const [crf, setCrf] = useState(loadNumber('form:video:compress:crf', 23))
   const [running, setRunning] = useState(false)
   const [results, setResults] = useState<{ name: string; blob: Blob; info?: string }[]>([])
   const [thumb, setThumb] = useState<Blob | null>(null)
   const [thumbs, setThumbs] = useState<Blob[]>([])
-  const [thumbPos, setThumbPos] = useState(50)
+  const [thumbPos, setThumbPos] = useState(loadNumber('form:video:compress:thumbPos', 50))
+  useEffect(()=>{ saveNumber('form:video:compress:crf', crf) },[crf])
+  useEffect(()=>{ saveNumber('form:video:compress:thumbPos', thumbPos) },[thumbPos])
   const [available, setAvailable] = useState<boolean | null>(null)
 
   // Detect ffmpeg core availability once
