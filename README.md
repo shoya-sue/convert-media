@@ -182,6 +182,26 @@ sequenceDiagram
 | メッセージ型 | `progress/done/error`（id, bytes, usedOriginal など）|
 | 備考 | 非対応環境はメインスレッド実装へフォールバック |
 
+### 導入ノウハウ（社内配布 / 同一VPSで完結）
+
+- Squoosh（画像）
+  - 置き場所: `public/wasm/squoosh/`
+  - 必須ファイル: コーデックWASM/JS一式 + `init.mjs`（`init.mjs.example` を参考に `squooshEncode(bitmap, { target, quality, effort })` を実装）
+  - 動作: アプリは `/wasm/squoosh/init.mjs` の有無で自動判定。存在すれば Squoosh Worker を使用、無ければ OffscreenCanvas 経路へフォールバック。
+  - 推奨: 遅延ロード・Worker実行済み（UIブロックなし）。COOP/COEP（任意）でSIMD/Threadsが有効化されるブラウザでは更に高速。
+
+- ffmpeg.wasm（動画）
+  - 置き場所: `public/wasm/ffmpeg/`
+  - 必須ファイル: `ffmpeg-core.js`, `ffmpeg-core.wasm`, `ffmpeg-core.worker.js`（パッケージ同梱物を自己ホスト）
+  - Worker: `workers/videoFfmpeg.worker.ts` が `corePath: '/wasm/ffmpeg/ffmpeg-core.js'` で読み込み、H.264/AACで再エンコード。
+  - 判定: UIは `HEAD /wasm/ffmpeg/ffmpeg-core.js` で配置を検出。未配置ならボタンは無効表示（UIのみ）。
+  - 推奨: こちらもCOOP/COEP（任意）。
+
+### ブラウザ要件とフォールバック
+- 利用者側の拡張や設定は不要。最新のChrome/Edge/Firefox/Safariで動作。
+- OffscreenCanvas/convertToBlob 非対応でもメインスレッド圧縮に自動フォールバック（画像）。
+- Squoosh/ffmpeg.wasm 未配置でも機能は縮退しつつ動作（UIに状態表示）。
+
 ### Squoosh 導入手順（任意・高度）
 - 目的: mozjpeg/oxipng/webp/avif のWASMで高効率圧縮を実現。
 - 手順（例）

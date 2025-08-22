@@ -4,8 +4,18 @@ import ProgressBar from '../../components/ProgressBar'
 
 export default function VideoCompress() {
   const [files, setFiles] = useState<File[]>([])
-  const [progress] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [crf, setCrf] = useState(23)
+  const [running, setRunning] = useState(false)
+  const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
+  const [available, setAvailable] = useState<boolean | null>(null)
+
+  // Detect ffmpeg core availability once
+  if (available === null) {
+    fetch('/wasm/ffmpeg/ffmpeg-core.js', { method: 'HEAD' })
+      .then((r) => setAvailable(r.ok))
+      .catch(() => setAvailable(false))
+  }
 
   return (
     <div className="stack">
@@ -25,10 +35,52 @@ export default function VideoCompress() {
         </div>
         <Dropzone accept="video/*" onFiles={setFiles} files={files} />
         <div className="controls">
-          <button className="btn btn-primary" disabled>圧縮開始（近日対応）</button>
+          <button className="btn btn-primary" disabled={!files.length || running || available === false} onClick={() => onStart(files, crf, setProgress, setRunning, setResults)}>
+            {available === false ? 'ffmpeg未配置（無効）' : running ? '処理中...' : '圧縮開始'}
+          </button>
         </div>
         <ProgressBar value={progress} />
+        {!!results.length && (
+          <div className="card">
+            <h3>結果</h3>
+            <ul>
+              {results.map((r) => (
+                <li key={r.name}>
+                  {r.name} <a href={URL.createObjectURL(r.blob)} download={r.name}>ダウンロード</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   )
+}
+
+async function onStart(files: File[], crf: number, setProgress: (n: number) => void, setRunning: (b: boolean) => void, setResults: (r: { name: string; blob: Blob }[]) => void) {
+  setRunning(true)
+  setProgress(0)
+  const out: { name: string; blob: Blob }[] = []
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]
+    const res = await runVideoWorkerOnce(f, { crf, preset: 'medium', maxLongEdge: null, fpsCap: null }, (ratio) => setProgress(Math.round(ratio * 100)))
+    out.push({ name: f.name.replace(/\.[^.]+$/, '') + '_cmp.mp4', blob: new Blob([res.data], { type: res.mime }) })
+  }
+  setResults(out)
+  setProgress(100)
+  setRunning(false)
+}
+
+async function runVideoWorkerOnce(file: File, params: { crf: number; preset: string; maxLongEdge: number | null; fpsCap: number | null }, onProgress: (r: number) => void) {
+  const id = crypto.randomUUID()
+  const data = await file.arrayBuffer()
+  const worker = new Worker(new URL('../../workers/videoFfmpeg.worker.ts', import.meta.url), { type: 'module' })
+  return new Promise<{ data: ArrayBuffer; bytes: number; mime: string }>((resolve, reject) => {
+    worker.onmessage = (e: MessageEvent<any>) => {
+      if (e.data?.type === 'progress' && e.data?.id === id) onProgress(e.data.ratio)
+      if (e.data?.type === 'done' && e.data?.id === id) { worker.terminate(); resolve({ data: e.data.data, bytes: e.data.bytes, mime: e.data.mime }) }
+      if (e.data?.type === 'error' && e.data?.id === id) { worker.terminate(); reject(new Error(e.data.error)) }
+    }
+    worker.postMessage({ id, name: file.name, type: file.type, data, params }, { transfer: [data] })
+  })
 }

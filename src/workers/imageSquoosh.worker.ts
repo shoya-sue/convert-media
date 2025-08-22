@@ -24,6 +24,18 @@ self.onmessage = async (e: MessageEvent<SquooshTask>) => {
   try {
     const blob = new Blob([t.data], { type: t.type })
     const bitmap = await createImageBitmap(blob)
+    if (!self.squooshEncode) {
+      try {
+        const dyn = (p: string) => (0, eval)('import(p)')
+        const mod = await dyn('/wasm/squoosh/init.mjs')
+        if (mod && typeof (mod as any).squooshEncode === 'function') {
+          // @ts-ignore
+          self.squooshEncode = (mod as any).squooshEncode
+        }
+      } catch (_) {
+        // 後段で未初期化エラーへ
+      }
+    }
     if (!self.squooshEncode) throw new Error('Squoosh codecs are not initialized')
     const quality = t.params.quality ?? 0.9
     const effort = t.params.effort ?? 4
@@ -33,4 +45,3 @@ self.onmessage = async (e: MessageEvent<SquooshTask>) => {
     postMessage({ type: 'error', id: t.id, error: String(err?.message ?? err) } as SquooshMsg)
   }
 }
-

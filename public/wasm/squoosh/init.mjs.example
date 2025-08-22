@@ -1,0 +1,19 @@
+// 社内配布用: Squoosh コーデックの初期化ラッパ例
+// 目的: Worker から import('/wasm/squoosh/init.mjs') で読み込まれ、
+//       squooshEncode(bitmap, { target, quality, effort }) を提供する。
+
+// 例では window/worker どちらでも動くように self を参照します。
+const g = typeof self !== 'undefined' ? self : globalThis
+
+// 以下は擬似コードです。実際には配布された Squoosh のバンドルに合わせて調整してください。
+// （@squoosh/lib や @squoosh/codecs のエントリを自己ホストし、ここで動的 import）
+
+export async function squooshEncode(bitmap, { target, quality = 0.9, effort = 4 }) {
+  // 例: 独自ビルドのエンコーダーローダ
+  // const { encodeImage } = await import('/wasm/squoosh/encode.mjs')
+  // const { data, mime } = await encodeImage(bitmap, { target, quality, effort })
+  // return { data, mime }
+
+  throw new Error('squooshEncode is not wired. Please replace init.mjs.example with your implementation.')
+}
+
