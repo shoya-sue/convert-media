@@ -178,8 +178,17 @@ sequenceDiagram
 | WASM配置 | （将来）`public/wasm/ffmpeg/ffmpeg-core.*`, `public/wasm/squoosh/*` |
 | 遅延ロード | 各ページで初回 `import()`、使用時のみ読み込み |
 | 画像Worker | `workers/imageCompress.worker.ts`（OffscreenCanvas + convertToBlob）|
+| 画像Worker(拡張) | `workers/imageSquoosh.worker.ts`（Squoosh導入時に使用）|
 | メッセージ型 | `progress/done/error`（id, bytes, usedOriginal など）|
 | 備考 | 非対応環境はメインスレッド実装へフォールバック |
+
+### Squoosh 導入手順（任意・高度）
+- 目的: mozjpeg/oxipng/webp/avif のWASMで高効率圧縮を実現。
+- 手順（例）
+  - `public/wasm/squoosh/` に各コーデックの `.wasm`/`.js` を配置
+  - Worker初期化時に self へ `squooshEncode(bitmap, { target, quality, effort })` を提供（ラッパJSを自己ホスト）
+  - `imageSquoosh.worker.ts` は上記APIを呼ぶ。未初期化時はエラー→呼出側でフォールバック
+- 注意: バイナリ配布とライセンス表記に留意。CDNは使わず自己ホスト。
 
 ---
 
