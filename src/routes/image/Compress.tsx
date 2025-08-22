@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { compressImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
 import ImagePreview from '../../components/ImagePreview'
+import BeforeAfter from '../../components/BeforeAfter'
 import { loadJSON, saveJSON } from '../../lib/persist'
 
 export default function ImageCompress() {
@@ -164,7 +165,7 @@ export default function ImageCompress() {
       {files.length === 1 && results.length === 1 && (
         <div className="card">
           <h3>プレビュー</h3>
-          <ImagePreview before={files[0]} after={results[0].blob} />
+          <BeforeAfter before={files[0]} after={results[0].blob} />
         </div>
       )}
     </div>

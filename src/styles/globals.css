@@ -82,5 +82,15 @@ h1 { margin: 0 0 12px; font-size: 22px; letter-spacing: .2px; }
 .badge--good { background: rgba(20, 241, 198, 0.15); color: #14f1c6; border-color: rgba(20, 241, 198, 0.35); }
 .badge--ok { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139,92,246,0.35); }
 .badge--low { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+
+/* Before/After slider */
+.ba-container { position: relative; width: 100%; max-width: 800px; margin: 8px auto; border: 1px solid var(--panel-stroke); border-radius: 12px; overflow: hidden; }
+.ba-img { display: block; width: 100%; height: auto; }
+.ba-after { position: absolute; top: 0; left: 0; }
+.ba-slider { position: absolute; left: 0; right: 0; bottom: 8px; width: 60%; margin: 0 auto; appearance: none; height: 4px; background: rgba(255,255,255,0.2); border-radius: 999px; }
+.ba-slider::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(90deg, var(--primary), var(--primary-2)); border: 2px solid #0a0f15; }
+.ba-label { position: absolute; top: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: rgba(0,0,0,0.35); }
+.ba-label-left { left: 8px; }
+.ba-label-right { right: 8px; }
 .select { appearance: none; background: rgba(255,255,255,0.04); color: var(--text); border: 1px solid var(--panel-stroke); border-radius: 10px; padding: 8px 10px; }
 .range { accent-color: var(--primary); width: 200px; }
