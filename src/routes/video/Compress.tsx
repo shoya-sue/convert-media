@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
+import { createVideoThumbnail } from '../../lib/video'
 
 export default function VideoCompress() {
   const [files, setFiles] = useState<File[]>([])
@@ -8,6 +9,7 @@ export default function VideoCompress() {
   const [crf, setCrf] = useState(23)
   const [running, setRunning] = useState(false)
   const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
+  const [thumb, setThumb] = useState<Blob | null>(null)
   const [available, setAvailable] = useState<boolean | null>(null)
 
   // Detect ffmpeg core availability once
@@ -33,7 +35,7 @@ export default function VideoCompress() {
             <input className="range" type="range" min={18} max={30} step={1} value={crf} onChange={(e) => setCrf(parseInt(e.target.value))} />
           </div>
         </div>
-        <Dropzone accept="video/*" onFiles={setFiles} files={files} />
+        <Dropzone accept="video/*" onFiles={async (fs)=>{ setFiles(fs); if (fs.length===1){ try{ setThumb(await createVideoThumbnail(fs[0])) } catch{ setThumb(null) } } }} files={files} />
         <div className="controls">
           <button className="btn btn-primary" disabled={!files.length || running || available === false} onClick={() => onStart(files, crf, setProgress, setRunning, setResults)}>
             {available === false ? 'ffmpeg未配置（無効）' : running ? '処理中...' : '圧縮開始'}
@@ -50,6 +52,12 @@ export default function VideoCompress() {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+        {thumb && (
+          <div className="card">
+            <h3>プレビュー</h3>
+            <img src={URL.createObjectURL(thumb)} style={{ maxWidth: '100%', borderRadius: 8 }} />
           </div>
         )}
       </div>

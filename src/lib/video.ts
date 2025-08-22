@@ -46,3 +46,36 @@ export async function transcodeVideo(
   })
 }
 
+export async function createVideoThumbnail(file: File, atSec = 0.5): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.src = url
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    const onCleanup = () => URL.revokeObjectURL(url)
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(atSec, (video.duration || 1) - 0.1)
+      } catch {
+        // ignore
+      }
+    }
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas')
+      const w = video.videoWidth
+      const h = video.videoHeight
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(video, 0, 0, w, h)
+      canvas.toBlob((b) => {
+        onCleanup()
+        if (b) resolve(b)
+        else reject(new Error('thumbnail toBlob failed'))
+      }, 'image/jpeg', 0.85)
+    }
+    video.onerror = (e) => { onCleanup(); reject(new Error('video load error')) }
+  })
+}

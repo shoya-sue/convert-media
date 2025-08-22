@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
+import { createVideoThumbnail } from '../../lib/video'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -12,6 +13,7 @@ export default function VideoConvert() {
   const [progress, setProgress] = useState(0)
   const [running, setRunning] = useState(false)
   const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
+  const [thumb, setThumb] = useState<Blob | null>(null)
   const [available, setAvailable] = useState<boolean | null>(null)
 
   if (available === null) isFfmpegAvailable().then(setAvailable).catch(() => setAvailable(false))
@@ -55,7 +57,7 @@ export default function VideoConvert() {
             <input className="range" type="range" min={18} max={36} step={1} {...register('crf', { valueAsNumber: true })} />
           </div>
         </div>
-        <Dropzone accept="video/*" onFiles={setFiles} files={files} />
+        <Dropzone accept="video/*" onFiles={async (fs)=>{ setFiles(fs); if (fs.length===1){ try{ setThumb(await createVideoThumbnail(fs[0])) } catch{ setThumb(null) } } }} files={files} />
         <div className="controls">
           <button className="btn btn-primary" disabled={!files.length || running || available === false} onClick={onStart}>
             {available === false ? 'ffmpeg未配置（無効）' : running ? '処理中...' : '変換開始'}
@@ -70,6 +72,12 @@ export default function VideoConvert() {
                 <li key={r.name}>{r.name} <a href={URL.createObjectURL(r.blob)} download={r.name}>ダウンロード</a></li>
               ))}
             </ul>
+          </div>
+        )}
+        {thumb && (
+          <div className="card">
+            <h3>プレビュー</h3>
+            <img src={URL.createObjectURL(thumb)} style={{ maxWidth: '100%', borderRadius: 8 }} />
           </div>
         )}
       </div>
