@@ -29,12 +29,13 @@ export default function ImageCompress() {
   const onProcess = handleSubmit(async (values) => {
     setResults([])
     setProgress(0)
-    const out: { name: string; blob: Blob }[] = []
+    const out: { name: string; blob: Blob; info: string }[] = []
     for (let i = 0; i < files.length; i++) {
       const f = files[i]
-      const blob = await compressImageFile(f, values)
+      const res = await compressImageFile(f, { ...values, avoidUpsize: true })
       const name = buildOutputName(f.name, values)
-      out.push({ name, blob })
+      const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
+      out.push({ name, blob: res.blob, info })
       setProgress(Math.round(((i + 1) / files.length) * 100))
     }
     setResults(out)
@@ -89,8 +90,7 @@ export default function ImageCompress() {
           <ul>
             {results.map((r) => (
               <li key={r.name}>
-                {r.name}{' '}
-                <DownloadLink name={r.name} blob={r.blob} />
+                {r.name} <span className="muted">{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
               </li>
             ))}
           </ul>
