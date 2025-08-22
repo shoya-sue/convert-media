@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { convertImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
 import ImagePreview from '../../components/ImagePreview'
+import { useState as useReactState } from 'react'
 
 export default function ImageConvert() {
   const [files, setFiles] = useState<File[]>([])
@@ -31,12 +32,23 @@ export default function ImageConvert() {
     setResults([])
     setProgress(0)
     const out: { name: string; blob: Blob }[] = []
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i]
-      const blob = await convertImageFile(f, values)
-      const name = buildOutputName(f.name, values)
-      out.push({ name, blob })
-      setProgress(Math.round(((i + 1) / files.length) * 100))
+    const useSquoosh = await isSquooshAvailable()
+    if (useSquoosh) {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const res = await runSquooshWorkerOnce(f, { target: values.target, quality: values.quality })
+        const name = buildOutputName(f.name, values)
+        out.push({ name, blob: new Blob([res.data], { type: res.mime }) })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
+    } else {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const blob = await convertImageFile(f, values)
+        const name = buildOutputName(f.name, values)
+        out.push({ name, blob })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
     }
     setResults(out)
   })
@@ -133,4 +145,25 @@ function PresetButtons({ onSelect, current }: { onSelect: (q: number) => void; c
       ))}
     </div>
   )
+}
+
+async function isSquooshAvailable() {
+  try {
+    const res = await fetch('/wasm/squoosh/init.mjs', { method: 'HEAD' })
+    return res.ok
+  } catch { return false }
+}
+
+async function runSquooshWorkerOnce(file: File, params: { target: 'jpeg'|'png'|'webp'; quality: number }) {
+  const id = crypto.randomUUID()
+  const data = await file.arrayBuffer()
+  const worker = new Worker(new URL('../../workers/imageSquoosh.worker.ts', import.meta.url), { type: 'module' })
+  const payload = { id, name: file.name, type: file.type, data, params: { target: params.target, quality: params.quality, effort: 4 } }
+  return new Promise<{ data: ArrayBuffer; bytes: number; mime: string }>((resolve, reject) => {
+    worker.onmessage = (e: MessageEvent<any>) => {
+      if (e.data?.type === 'done' && e.data?.id === id) { worker.terminate(); resolve({ data: e.data.data, bytes: e.data.bytes, mime: e.data.mime }) }
+      if (e.data?.type === 'error' && e.data?.id === id) { worker.terminate(); reject(new Error(e.data.error)) }
+    }
+    worker.postMessage(payload, { transfer: [data] })
+  })
 }

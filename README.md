@@ -103,7 +103,7 @@ sequenceDiagram
 
 ### 画像 - 変換 `/image/convert`
 - 目的: 指定形式（JPEG/PNG/WebP）へ変換（初心者はプリセットで簡単操作）
-- 使用: `@squoosh/lib` または Canvas ベースの軽量処理（MVP）
+- 使用: Squoosh（自己ホスト時に自動有効）/ フォールバック: Canvas
 
 | 出力形式/操作 | 既定値 | 備考 |
 |---|---|---|
@@ -118,7 +118,7 @@ sequenceDiagram
 
 ### 画像 - リサイズ `/image/resize`
 - 目的: 寸法変更（アスペクト維持）。用途別のサイズプリセットで簡単操作
-- 使用: `@squoosh/lib`（resize オプション）または Canvas（MVP）
+- 使用: Squoosh + OffscreenCanvas（自己ホスト時）/ フォールバック: Canvas
 
 | パラメータ/操作 | 既定 | 備考 |
 |---|---|---|

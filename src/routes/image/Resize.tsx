@@ -32,12 +32,23 @@ export default function ImageResize() {
     setResults([])
     setProgress(0)
     const out: { name: string; blob: Blob }[] = []
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i]
-      const blob = await resizeImageFile(f, values)
-      const name = buildOutputName(f.name, values)
-      out.push({ name, blob })
-      setProgress(Math.round(((i + 1) / files.length) * 100))
+    const useSquoosh = await isSquooshAvailable()
+    if (useSquoosh) {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const res = await runSquooshWorkerOnce(f, { target: values.format === 'auto' ? 'jpeg' : values.format, quality: values.quality, maxLongEdge: values.longEdge })
+        const name = buildOutputName(f.name, values)
+        out.push({ name, blob: new Blob([res.data], { type: res.mime }) })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
+    } else {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const blob = await resizeImageFile(f, values)
+        const name = buildOutputName(f.name, values)
+        out.push({ name, blob })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
     }
     setResults(out)
   })
@@ -136,4 +147,20 @@ function SizePresets({ onSelect, current }: { onSelect: (px: number) => void; cu
       ))}
     </div>
   )
+}
+
+async function isSquooshAvailable() { try { const r = await fetch('/wasm/squoosh/init.mjs', { method: 'HEAD' }); return r.ok } catch { return false } }
+
+async function runSquooshWorkerOnce(file: File, params: { target: 'jpeg'|'png'|'webp'; quality: number; maxLongEdge: number }) {
+  const id = crypto.randomUUID()
+  const data = await file.arrayBuffer()
+  const worker = new Worker(new URL('../../workers/imageSquoosh.worker.ts', import.meta.url), { type: 'module' })
+  const payload = { id, name: file.name, type: file.type, data, params: { target: params.target, quality: params.quality, effort: 4, maxLongEdge: params.maxLongEdge } }
+  return new Promise<{ data: ArrayBuffer; bytes: number; mime: string }>((resolve, reject) => {
+    worker.onmessage = (e: MessageEvent<any>) => {
+      if (e.data?.type === 'done' && e.data?.id === id) { worker.terminate(); resolve({ data: e.data.data, bytes: e.data.bytes, mime: e.data.mime }) }
+      if (e.data?.type === 'error' && e.data?.id === id) { worker.terminate(); reject(new Error(e.data.error)) }
+    }
+    worker.postMessage(payload, { transfer: [data] })
+  })
 }

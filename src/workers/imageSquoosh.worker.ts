@@ -7,7 +7,7 @@ export type SquooshTask = {
   name: string
   type: string
   data: ArrayBuffer
-  params: { target: 'jpeg'|'png'|'webp'|'avif'; quality?: number; effort?: number }
+  params: { target: 'jpeg'|'png'|'webp'|'avif'; quality?: number; effort?: number; maxLongEdge?: number | null }
 }
 
 export type SquooshMsg =
@@ -39,7 +39,21 @@ self.onmessage = async (e: MessageEvent<SquooshTask>) => {
     if (!self.squooshEncode) throw new Error('Squoosh codecs are not initialized')
     const quality = t.params.quality ?? 0.9
     const effort = t.params.effort ?? 4
-    const encoded = await self.squooshEncode(bitmap, { target: t.params.target, quality, effort })
+    const maxL = t.params.maxLongEdge ?? null
+    // リサイズ指定があれば OffscreenCanvas でスケール
+    let input = bitmap
+    if (maxL && (bitmap.width > maxL || bitmap.height > maxL)) {
+      const w = bitmap.width
+      const h = bitmap.height
+      const ratio = w >= h ? maxL / w : maxL / h
+      const canvas = new OffscreenCanvas(Math.round(w * ratio), Math.round(h * ratio))
+      const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(bitmap, 0, 0, canvas.width as number, canvas.height as number)
+      input = await (canvas as any).transferToImageBitmap?.() ?? (await createImageBitmap(await (canvas as any).convertToBlob()))
+    }
+    const encoded = await self.squooshEncode(input, { target: t.params.target, quality, effort })
     postMessage({ type: 'done', id: t.id, name: t.name, data: encoded.data, bytes: encoded.data.byteLength, mime: encoded.mime } as SquooshMsg, { transfer: [encoded.data] })
   } catch (err: any) {
     postMessage({ type: 'error', id: t.id, error: String(err?.message ?? err) } as SquooshMsg)
