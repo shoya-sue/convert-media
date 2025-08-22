@@ -90,10 +90,20 @@ export default function VideoConvert() {
               <button className="btn" onClick={async ()=> { if (files.length===1){ try{ setThumb(await createVideoThumbnail(files[0], (thumbPos/100))) } catch{} } }}>更新</button>
               <button className="btn btn-ghost" onClick={async ()=> { if (files.length===1){ try{ setThumbs(await createVideoThumbnails(files[0],[0.2,0.5,0.8])) } catch{} } }}>3枚作成</button>
             </div>
-            {thumb && <img src={URL.createObjectURL(thumb)} style={{ maxWidth: '100%', borderRadius: 8 }} />}
+            {thumb && (
+              <div className="controls" style={{ alignItems: 'center', gap: 8 }}>
+                <img src={URL.createObjectURL(thumb)} style={{ maxWidth: '60%', borderRadius: 8 }} />
+                <a className="btn btn-ghost" href={URL.createObjectURL(thumb)} download={(files[0]?.name?.replace(/\.[^.]+$/, '')||'thumb')+`_${thumbPos}.jpg`}>サムネを保存</a>
+              </div>
+            )}
             {thumbs.length>0 && (
               <div className="controls" style={{ gap: 8 }}>
-                {thumbs.map((t,i)=> <img key={i} src={URL.createObjectURL(t)} style={{ width: '32%', borderRadius: 8 }} />)}
+                {thumbs.map((t,i)=> (
+                  <div key={i} style={{ width: '32%' }}>
+                    <img src={URL.createObjectURL(t)} style={{ width: '100%', borderRadius: 8, display: 'block' }} />
+                    <a className="btn btn-ghost" href={URL.createObjectURL(t)} download={(files[0]?.name?.replace(/\.[^.]+$/, '')||'thumb')+`_${i+1}.jpg`}>保存</a>
+                  </div>
+                ))}
               </div>
             )}
           </div>
