@@ -85,19 +85,21 @@ sequenceDiagram
 ## ページ別 仕様（デフォルト/実装要点）
 
 ### 画像 - 圧縮 `/image/compress`
-- 目的: 入力形式を維持しつつ容量削減
-- 使用: `@squoosh/lib`（mozjpeg/oxipng/webp/avif）, Canvas（プレビュー）
+- 目的: 入力形式を維持しつつ容量削減（初心者はプリセットで簡単操作）
+- 使用: `@squoosh/lib`（mozjpeg/oxipng/webp/avif）または Canvas ベースの軽量処理（MVP）
 
-| 形式 | エンコーダ | 既定値 | 備考 |
-|---|---|---|---|
-| JPEG | mozjpeg | quality 0.75, 4:2:0 | baseline 推奨 |
-| PNG | oxipng | level 3（lossless） | 速度と圧縮のバランス |
-| WebP | libwebp | quality 0.75, effort 4 | lossy |
-| AVIF | libavif | cq 30, effort 4 | 高圧縮・遅め |
+| 形式/操作 | 既定値 | 備考 |
+|---|---|---|
+| プリセット | 軽量(0.6) / バランス(0.75) / 高画質(0.9) | セグメントUIで選択 |
+| 詳細: JPEG | quality 0.75, 4:2:0 | baseline 推奨 |
+| 詳細: PNG | lossless level 3 | 速度/圧縮バランス |
+| 詳細: WebP | quality 0.75, effort 4 | |
+| 詳細: AVIF | cq 30, effort 4 | 高圧縮・遅め |
 
 実装要点
+- プリセット（セグメントUI）で理解負担を軽減、詳細設定にスライダー/形式を配置。
 - 形式を判別して再エンコード（メタデータは既定で削除）。
-- Before/After プレビューと削減率表示。
+- Before/After プレビューと削減率表示（将来追加）。
 
 ### 画像 - 変換 `/image/convert`
 - 目的: 指定形式（JPEG/PNG/WebP/AVIF）へ変換
