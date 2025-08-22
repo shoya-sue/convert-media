@@ -23,7 +23,7 @@ export default function ImageCompress() {
   type FormValues = z.infer<typeof schema>
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { format: 'auto', quality: 0.75 },
+    defaultValues: { format: 'auto', quality: 0.88 },
   })
 
   const onProcess = handleSubmit(async (values) => {
@@ -57,7 +57,7 @@ export default function ImageCompress() {
         <h1>画像 圧縮</h1>
         <p className="muted">初心者でも簡単：おすすめプリセットを選ぶだけでOK。細かい調整は「詳細設定」で変更できます。</p>
         <div className="controls">
-          <PresetButtons onSelect={(q) => setValue('quality', q, { shouldDirty: true })} current={watch('quality') ?? 0.75} />
+          <PresetButtons onSelect={(q) => setValue('quality', q, { shouldDirty: true })} current={watch('quality') ?? 0.88} />
         </div>
         <Dropzone accept="image/*" onFiles={setFiles} files={files} />
         <form className="controls" onSubmit={onProcess}>
@@ -131,9 +131,9 @@ function DownloadLink({ name, blob }: { name: string; blob: Blob }) {
 function PresetButtons({ onSelect, current }: { onSelect: (q: number) => void; current: number }) {
   // マッピング：初心者向けに「軽量」「バランス」「高画質」
   const presets = [
-    { key: 'small', label: '軽量（小さく）', q: 0.6 },
-    { key: 'balanced', label: 'バランス', q: 0.75 },
-    { key: 'high', label: '高画質（大きめ）', q: 0.9 },
+    { key: 'small', label: '軽量（小さく）', q: 0.7 },
+    { key: 'balanced', label: 'バランス', q: 0.88 },
+    { key: 'high', label: '最高品質', q: 0.98 },
   ]
   const nearest = presets.reduce((a, b) => (Math.abs(b.q - current) < Math.abs(a.q - current) ? b : a), presets[0])
   return (

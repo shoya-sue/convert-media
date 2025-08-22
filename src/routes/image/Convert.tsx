@@ -23,7 +23,7 @@ export default function ImageConvert() {
   type FormValues = z.infer<typeof schema>
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { target: 'webp', quality: 0.8 },
+    defaultValues: { target: 'webp', quality: 0.9 },
   })
 
   const onProcess = handleSubmit(async (values) => {
@@ -56,7 +56,7 @@ export default function ImageConvert() {
         <h1>画像 変換</h1>
         <p className="muted">おすすめプリセットで簡単に形式変換。詳細設定で品質も調整できます。</p>
         <div className="controls">
-          <PresetButtons onSelect={(q) => setValue('quality', q, { shouldDirty: true })} current={watch('quality') ?? 0.8} />
+          <PresetButtons onSelect={(q) => setValue('quality', q, { shouldDirty: true })} current={watch('quality') ?? 0.9} />
         </div>
         <Dropzone accept="image/*" onFiles={setFiles} files={files} />
         <form className="controls" onSubmit={onProcess}>
@@ -112,9 +112,9 @@ function DownloadLink({ name, blob }: { name: string; blob: Blob }) {
 
 function PresetButtons({ onSelect, current }: { onSelect: (q: number) => void; current: number }) {
   const presets = [
-    { key: 'small', label: '軽量（小さく）', q: 0.6 },
-    { key: 'balanced', label: 'バランス', q: 0.8 },
-    { key: 'high', label: '高画質（大きめ）', q: 0.95 },
+    { key: 'small', label: '軽量（小さく）', q: 0.7 },
+    { key: 'balanced', label: 'バランス', q: 0.9 },
+    { key: 'high', label: '最高品質', q: 0.98 },
   ]
   const nearest = presets.reduce((a, b) => (Math.abs(b.q - current) < Math.abs(a.q - current) ? b : a), presets[0])
   return (
