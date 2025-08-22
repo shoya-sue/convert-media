@@ -12,7 +12,7 @@ import { useState as useReactState } from 'react'
 export default function ImageConvert() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
-  const [results, setResults] = useState<{ name: string; blob: Blob; info: string }[]>([])
+  const [results, setResults] = useState<{ name: string; blob: Blob; info: string; reduction: number }[]>([])
 
   const schema = useMemo(
     () =>
@@ -42,8 +42,9 @@ export default function ImageConvert() {
         const res = await runSquooshWorkerOnce(f, { target: values.target, quality: values.quality })
         const name = buildOutputName(f.name, values)
         const blob = new Blob([res.data], { type: res.mime })
-        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.max(0, Math.round((1 - blob.size / f.size)*100))}%）`
-        out.push({ name, blob, info })
+        const reduction = Math.max(0, 1 - blob.size / f.size)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.round(reduction*100)}%）`
+        out.push({ name, blob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else {
@@ -51,12 +52,13 @@ export default function ImageConvert() {
         const f = files[i]
         const blob = await convertImageFile(f, values)
         const name = buildOutputName(f.name, values)
-        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.max(0, Math.round((1 - blob.size / f.size)*100))}%）`
-        out.push({ name, blob, info })
+        const reduction = Math.max(0, 1 - blob.size / f.size)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.round(reduction*100)}%）`
+        out.push({ name, blob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     }
-    setResults(out)
+    setResults(out.sort((a,b)=> b.reduction - a.reduction))
   })
 
   const onDownloadAll = async () => {
@@ -123,7 +125,7 @@ export default function ImageConvert() {
           <ul>
             {results.map((r) => (
               <li key={r.name}>
-                {r.name} <span className="muted">{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
+                {r.name} <span className={`badge ${r.reduction>=0.5?'badge--good':r.reduction>=0.2?'badge--ok':'badge--low'}`}>{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
               </li>
             ))}
           </ul>

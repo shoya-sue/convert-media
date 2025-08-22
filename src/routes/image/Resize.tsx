@@ -11,7 +11,7 @@ import ImagePreview from '../../components/ImagePreview'
 export default function ImageResize() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
-  const [results, setResults] = useState<{ name: string; blob: Blob; info: string }[]>([])
+  const [results, setResults] = useState<{ name: string; blob: Blob; info: string; reduction: number }[]>([])
 
   const schema = useMemo(
     () =>
@@ -39,8 +39,9 @@ export default function ImageResize() {
         const res = await runSquooshWorkerOnce(f, { target: values.format === 'auto' ? 'jpeg' : values.format, quality: values.quality, maxLongEdge: values.longEdge })
         const name = buildOutputName(f.name, values)
         const outBlob = new Blob([res.data], { type: res.mime })
-        const info = `${(f.size/1024).toFixed(1)}KB → ${(outBlob.size/1024).toFixed(1)}KB（-${Math.max(0, Math.round((1 - outBlob.size / f.size)*100))}%）`
-        out.push({ name, blob: outBlob, info })
+        const reduction = Math.max(0, 1 - outBlob.size / f.size)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(outBlob.size/1024).toFixed(1)}KB（-${Math.round(reduction*100)}%）`
+        out.push({ name, blob: outBlob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else {
@@ -48,12 +49,13 @@ export default function ImageResize() {
         const f = files[i]
         const blob = await resizeImageFile(f, values)
         const name = buildOutputName(f.name, values)
-        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.max(0, Math.round((1 - blob.size / f.size)*100))}%）`
-        out.push({ name, blob, info })
+        const reduction = Math.max(0, 1 - blob.size / f.size)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.round(reduction*100)}%）`
+        out.push({ name, blob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     }
-    setResults(out)
+    setResults(out.sort((a,b)=> (b.reduction ?? 0) - (a.reduction ?? 0)))
   })
 
   const onDownloadAll = async () => {
@@ -133,7 +135,7 @@ export default function ImageResize() {
           <ul>
             {results.map((r) => (
               <li key={r.name}>
-                {r.name} <span className="muted">{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
+                {r.name} <span className={`badge ${((r.reduction ?? 0)>=0.5)?'badge--good':((r.reduction ?? 0)>=0.2)?'badge--ok':'badge--low'}`}>{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
               </li>
             ))}
           </ul>

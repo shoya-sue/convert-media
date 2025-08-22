@@ -11,7 +11,7 @@ import ImagePreview from '../../components/ImagePreview'
 export default function ImageCompress() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
-  const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
+  const [results, setResults] = useState<{ name: string; blob: Blob; info?: string; reduction?: number }[]>([])
 
   const schema = useMemo(
     () =>
@@ -30,7 +30,7 @@ export default function ImageCompress() {
   const onProcess = handleSubmit(async (values) => {
     setResults([])
     setProgress(0)
-    const out: { name: string; blob: Blob; info: string }[] = []
+    const out: { name: string; blob: Blob; info: string; reduction: number }[] = []
     const squooshReady = await isSquooshAvailable()
     const canWorker = 'Worker' in window && 'OffscreenCanvas' in window
 
@@ -40,7 +40,9 @@ export default function ImageCompress() {
         const res = await runSquooshWorkerOnce(f, values)
         const name = buildOutputName(f.name, values)
         const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB`
-        out.push({ name, blob: new Blob([res.data], { type: res.mime }), info })
+        const outBlob = new Blob([res.data], { type: res.mime })
+        const reduction = Math.max(0, 1 - outBlob.size / f.size)
+        out.push({ name, blob: outBlob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else if (canWorker) {
@@ -49,7 +51,9 @@ export default function ImageCompress() {
         const res = await runWorkerOnce(f, values)
         const name = buildOutputName(f.name, values)
         const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
-        out.push({ name, blob: new Blob([res.data], { type: res.type ?? f.type }), info })
+        const outBlob = new Blob([res.data], { type: res.type ?? f.type })
+        const reduction = Math.max(0, 1 - outBlob.size / f.size)
+        out.push({ name, blob: outBlob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else {
@@ -58,11 +62,13 @@ export default function ImageCompress() {
         const res = await compressImageFile(f, { ...values, avoidUpsize: true })
         const name = buildOutputName(f.name, values)
         const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
-        out.push({ name, blob: res.blob, info })
+        const reduction = Math.max(0, 1 - res.blob.size / f.size)
+        out.push({ name, blob: res.blob, info, reduction })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     }
-    setResults(out)
+    // 削減率の高い順に並べ替え
+    setResults(out.sort((a,b)=> (b.reduction ?? 0) - (a.reduction ?? 0)))
   })
 
   const onDownloadAll = async () => {
@@ -133,7 +139,9 @@ export default function ImageCompress() {
           <ul>
             {results.map((r) => (
               <li key={r.name}>
-                {r.name} <span className="muted">{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
+                {r.name} {r.info && (
+                  <span className={`badge ${((r.reduction ?? 0) >= 0.5) ? 'badge--good' : ((r.reduction ?? 0) >= 0.2) ? 'badge--ok' : 'badge--low'}`}>{r.info}</span>
+                )} <DownloadLink name={r.name} blob={r.blob} />
               </li>
             ))}
           </ul>

@@ -8,7 +8,7 @@ export default function VideoCompress() {
   const [progress, setProgress] = useState(0)
   const [crf, setCrf] = useState(23)
   const [running, setRunning] = useState(false)
-  const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
+  const [results, setResults] = useState<{ name: string; blob: Blob; info?: string }[]>([])
   const [thumb, setThumb] = useState<Blob | null>(null)
   const [thumbs, setThumbs] = useState<Blob[]>([])
   const [thumbPos, setThumbPos] = useState(50)
@@ -50,7 +50,7 @@ export default function VideoCompress() {
             <ul>
               {results.map((r) => (
                 <li key={r.name}>
-                  {r.name} <a href={URL.createObjectURL(r.blob)} download={r.name}>ダウンロード</a>
+                  {r.name} {r.info && <span className="badge badge--ok">{r.info}</span>} <a href={URL.createObjectURL(r.blob)} download={r.name}>ダウンロード</a>
                 </li>
               ))}
             </ul>
@@ -80,14 +80,16 @@ export default function VideoCompress() {
   )
 }
 
-async function onStart(files: File[], crf: number, setProgress: (n: number) => void, setRunning: (b: boolean) => void, setResults: (r: { name: string; blob: Blob }[]) => void) {
+async function onStart(files: File[], crf: number, setProgress: (n: number) => void, setRunning: (b: boolean) => void, setResults: (r: { name: string; blob: Blob; info?: string }[]) => void) {
   setRunning(true)
   setProgress(0)
-  const out: { name: string; blob: Blob }[] = []
+  const out: { name: string; blob: Blob; info?: string }[] = []
   for (let i = 0; i < files.length; i++) {
     const f = files[i]
     const res = await runVideoWorkerOnce(f, { crf, preset: 'medium', maxLongEdge: null, fpsCap: null }, (ratio) => setProgress(Math.round(ratio * 100)))
-    out.push({ name: f.name.replace(/\.[^.]+$/, '') + '_cmp.mp4', blob: new Blob([res.data], { type: res.mime }) })
+    const blob = new Blob([res.data], { type: res.mime })
+    const info = `${(f.size/1024/1024).toFixed(2)}MB → ${(blob.size/1024/1024).toFixed(2)}MB（-${Math.max(0, Math.round((1 - blob.size / f.size)*100))}%）`
+    out.push({ name: f.name.replace(/\.[^.]+$/, '') + '_cmp.mp4', blob, info })
   }
   setResults(out)
   setProgress(100)
