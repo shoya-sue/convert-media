@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { compressImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
+import ImagePreview from '../../components/ImagePreview'
 
 export default function ImageCompress() {
   const [files, setFiles] = useState<File[]>([])
@@ -109,6 +110,12 @@ export default function ImageCompress() {
             ))}
           </ul>
           <button className="btn btn-ghost" onClick={onDownloadAll}>すべてZIPでダウンロード</button>
+        </div>
+      )}
+      {files.length === 1 && results.length === 1 && (
+        <div className="card">
+          <h3>プレビュー</h3>
+          <ImagePreview before={files[0]} after={results[0].blob} />
         </div>
       )}
     </div>
