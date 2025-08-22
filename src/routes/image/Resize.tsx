@@ -12,7 +12,9 @@ import { loadJSON, saveJSON } from '../../lib/persist'
 export default function ImageResize() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
-  const [results, setResults] = useState<{ name: string; blob: Blob; info: string; reduction: number }[]>([])
+  const [results, setResults] = useState<{ name: string; blob: Blob; info: string; reduction: number; orig?: number; out?: number }[]>([])
+  const [squooshAvail, setSquooshAvail] = useState<boolean | null>(null)
+  useEffect(()=>{ (async()=>{ try{ const r=await fetch('/wasm/squoosh/init.mjs',{method:'HEAD'}); setSquooshAvail(r.ok) }catch{ setSquooshAvail(false) } })() },[])
 
   const schema = useMemo(
     () =>
@@ -47,7 +49,7 @@ export default function ImageResize() {
         const outBlob = new Blob([res.data], { type: res.mime })
         const reduction = Math.max(0, 1 - outBlob.size / f.size)
         const info = `${(f.size/1024).toFixed(1)}KB → ${(outBlob.size/1024).toFixed(1)}KB（-${Math.round(reduction*100)}%）`
-        out.push({ name, blob: outBlob, info, reduction })
+        out.push({ name, blob: outBlob, info, reduction, orig: f.size, out: outBlob.size })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else {
@@ -57,7 +59,7 @@ export default function ImageResize() {
         const name = buildOutputName(f.name, values)
         const reduction = Math.max(0, 1 - blob.size / f.size)
         const info = `${(f.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB（-${Math.round(reduction*100)}%）`
-        out.push({ name, blob, info, reduction })
+        out.push({ name, blob, info, reduction, orig: f.size, out: blob.size })
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     }
@@ -141,7 +143,7 @@ export default function ImageResize() {
           <ul>
             {results.map((r) => (
               <li key={r.name}>
-                {r.name} <span className={`badge ${((r.reduction ?? 0)>=0.5)?'badge--good':((r.reduction ?? 0)>=0.2)?'badge--ok':'badge--low'}`}>{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
+                {r.name} <span title={`${((r.orig??0)/1024).toFixed(1)}KB → ${((r.out??0)/1024).toFixed(1)}KB`} className={`badge ${((r.reduction ?? 0)>=0.5)?'badge--good':((r.reduction ?? 0)>=0.2)?'badge--ok':'badge--low'}`}>{r.info}</span> <DownloadLink name={r.name} blob={r.blob} />
               </li>
             ))}
           </ul>
@@ -152,6 +154,11 @@ export default function ImageResize() {
         <div className="card">
           <h3>プレビュー</h3>
           <ImagePreview before={files[0]} after={results[0].blob} />
+        </div>
+      )}
+      {squooshAvail === false && (
+        <div className="card">
+          <p className="muted">高品質コーデック未配置のため標準エンジンで動作中です。`public/wasm/squoosh/` にWASM/JSを置くと自動で高品質になります。</p>
         </div>
       )}
     </div>
