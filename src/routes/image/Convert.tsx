@@ -18,14 +18,17 @@ export default function ImageConvert() {
     () =>
       z.object({
         target: z.enum(['jpeg', 'png', 'webp']).default('webp'),
-        quality: z.number().min(0).max(1).default(0.8),
+        quality: z.number().min(0).max(1).default(0.9),
+        effort: z.number().int().min(0).max(9).default(4),
+        lossless: z.boolean().default(false),
+        chroma: z.enum(['420','444']).default('420'),
       }),
     []
   )
   type FormValues = z.infer<typeof schema>
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { target: 'webp', quality: 0.9 },
+    defaultValues: { target: 'webp', quality: 0.9, effort: params.effort ?? 4, lossless: params.lossless ?? false, chroma: params.chroma ?? '420' , lossless: false, chroma: '420' },
   })
 
   const onProcess = handleSubmit(async (values) => {
@@ -83,9 +86,26 @@ export default function ImageConvert() {
               </select>
             </div>
             <div className="field">
-              <div className="field-label">品質: {Math.round((watch('quality') ?? 0.8) * 100)}</div>
+              <div className="field-label">品質: {Math.round((watch('quality') ?? 0.9) * 100)}</div>
               <input className="range" type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
+            
+            <div className="field">
+              <div className="field-label">努力度(effort)</div>
+              <select className="select" {...register('effort', { valueAsNumber: true })}>
+                {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>{i}</option>)}
+              </select>
             </div>
+            <div className="field">
+              <label><input type="checkbox" {...register('lossless')} /> ロスレス優先（PNG/WebPのみ）</label>
+            </div>
+            <div className="field">
+              <div className="field-label">サブサンプリング（JPEG）</div>
+              <select className="select" {...register('chroma')}>
+                <option value="420">4:2:0（既定）</option>
+                <option value="444">4:4:4（色優先）</option>
+              </select>
+            </div>
+          </div>
           </div>
           <button className="btn btn-primary" type="submit" disabled={!files.length}>変換開始</button>
         </form>
@@ -154,11 +174,11 @@ async function isSquooshAvailable() {
   } catch { return false }
 }
 
-async function runSquooshWorkerOnce(file: File, params: { target: 'jpeg'|'png'|'webp'; quality: number }) {
+async function runSquooshWorkerOnce(file: File, params: { target: 'jpeg'|'png'|'webp'; quality: number; effort?: number; lossless?: boolean; chroma?: '420'|'444' }) {
   const id = crypto.randomUUID()
   const data = await file.arrayBuffer()
   const worker = new Worker(new URL('../../workers/imageSquoosh.worker.ts', import.meta.url), { type: 'module' })
-  const payload = { id, name: file.name, type: file.type, data, params: { target: params.target, quality: params.quality, effort: 4 } }
+  const payload = { id, name: file.name, type: file.type, data, params: { target: params.target, quality: params.quality, effort: params.effort ?? 4, lossless: params.lossless ?? false, chroma: params.chroma ?? '420'  } }
   return new Promise<{ data: ArrayBuffer; bytes: number; mime: string }>((resolve, reject) => {
     worker.onmessage = (e: MessageEvent<any>) => {
       if (e.data?.type === 'done' && e.data?.id === id) { worker.terminate(); resolve({ data: e.data.data, bytes: e.data.bytes, mime: e.data.mime }) }
