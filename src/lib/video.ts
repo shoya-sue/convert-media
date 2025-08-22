@@ -79,3 +79,35 @@ export async function createVideoThumbnail(file: File, atSec = 0.5): Promise<Blo
     video.onerror = (e) => { onCleanup(); reject(new Error('video load error')) }
   })
 }
+
+export async function createVideoThumbnails(file: File, fractions: number[]): Promise<Blob[]> {
+  const url = URL.createObjectURL(file)
+  const video = document.createElement('video')
+  video.preload = 'metadata'
+  video.src = url
+  video.crossOrigin = 'anonymous'
+  video.muted = true
+  await new Promise<void>((resolve, reject) => {
+    video.onloadeddata = () => resolve()
+    video.onerror = () => reject(new Error('video load error'))
+  })
+  const duration = Math.max(0.1, video.duration || 1)
+  const canvas = document.createElement('canvas')
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  const ctx = canvas.getContext('2d')!
+  const blobs: Blob[] = []
+  for (const f of fractions) {
+    const t = Math.min(duration - 0.05, Math.max(0, f) * duration)
+    await new Promise<void>((resolve) => {
+      const onSeek = () => { video.removeEventListener('seeked', onSeek); resolve() }
+      video.addEventListener('seeked', onSeek)
+      try { video.currentTime = t } catch { resolve() }
+    })
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const b = await new Promise<Blob>((res, rej) => canvas.toBlob((bb)=> bb? res(bb): rej(new Error('toBlob failed')), 'image/jpeg', 0.85))
+    blobs.push(b)
+  }
+  URL.revokeObjectURL(url)
+  return blobs
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
-import { createVideoThumbnail } from '../../lib/video'
+import { createVideoThumbnail, createVideoThumbnails } from '../../lib/video'
 
 export default function VideoCompress() {
   const [files, setFiles] = useState<File[]>([])
@@ -10,6 +10,8 @@ export default function VideoCompress() {
   const [running, setRunning] = useState(false)
   const [results, setResults] = useState<{ name: string; blob: Blob }[]>([])
   const [thumb, setThumb] = useState<Blob | null>(null)
+  const [thumbs, setThumbs] = useState<Blob[]>([])
+  const [thumbPos, setThumbPos] = useState(50)
   const [available, setAvailable] = useState<boolean | null>(null)
 
   // Detect ffmpeg core availability once
@@ -35,7 +37,7 @@ export default function VideoCompress() {
             <input className="range" type="range" min={18} max={30} step={1} value={crf} onChange={(e) => setCrf(parseInt(e.target.value))} />
           </div>
         </div>
-        <Dropzone accept="video/*" onFiles={async (fs)=>{ setFiles(fs); if (fs.length===1){ try{ setThumb(await createVideoThumbnail(fs[0])) } catch{ setThumb(null) } } }} files={files} />
+        <Dropzone accept="video/*" onFiles={async (fs)=>{ setFiles(fs); setThumbs([]); if (fs.length===1){ try{ setThumb(await createVideoThumbnail(fs[0], 0.01 + (thumbPos/100))) } catch{ setThumb(null) } } }} files={files} />
         <div className="controls">
           <button className="btn btn-primary" disabled={!files.length || running || available === false} onClick={() => onStart(files, crf, setProgress, setRunning, setResults)}>
             {available === false ? 'ffmpeg未配置（無効）' : running ? '処理中...' : '圧縮開始'}
@@ -54,10 +56,23 @@ export default function VideoCompress() {
             </ul>
           </div>
         )}
-        {thumb && (
+        {(thumb || thumbs.length) && (
           <div className="card">
             <h3>プレビュー</h3>
-            <img src={URL.createObjectURL(thumb)} style={{ maxWidth: '100%', borderRadius: 8 }} />
+            <div className="controls">
+              <div className="field">
+                <div className="field-label">サムネ位置: {thumbPos}%</div>
+                <input className="range" type="range" min={0} max={100} step={1} value={thumbPos} onChange={(e)=> setThumbPos(parseInt(e.target.value))} />
+              </div>
+              <button className="btn" onClick={async ()=> { if (files.length===1){ try{ setThumb(await createVideoThumbnail(files[0], (thumbPos/100))) } catch{} } }}>更新</button>
+              <button className="btn btn-ghost" onClick={async ()=> { if (files.length===1){ try{ setThumbs(await createVideoThumbnails(files[0],[0.2,0.5,0.8])) } catch{} } }}>3枚作成</button>
+            </div>
+            {thumb && <img src={URL.createObjectURL(thumb)} style={{ maxWidth: '100%', borderRadius: 8 }} />}
+            {thumbs.length>0 && (
+              <div className="controls" style={{ gap: 8 }}>
+                {thumbs.map((t,i)=> <img key={i} src={URL.createObjectURL(t)} style={{ width: '32%', borderRadius: 8 }} />)}
+              </div>
+            )}
           </div>
         )}
       </div>
