@@ -7,7 +7,7 @@ export type SquooshTask = {
   name: string
   type: string
   data: ArrayBuffer
-  params: { target: 'jpeg'|'png'|'webp'|'avif'; quality?: number; effort?: number; maxLongEdge?: number | null }
+  params: { target: 'jpeg'|'png'|'webp'|'avif'; quality?: number; effort?: number; maxLongEdge?: number | null; lossless?: boolean; chroma?: '420'|'444' }
 }
 
 export type SquooshMsg =
@@ -53,7 +53,7 @@ self.onmessage = async (e: MessageEvent<SquooshTask>) => {
       ctx.drawImage(bitmap, 0, 0, canvas.width as number, canvas.height as number)
       input = await (canvas as any).transferToImageBitmap?.() ?? (await createImageBitmap(await (canvas as any).convertToBlob()))
     }
-    const encoded = await self.squooshEncode(input, { target: t.params.target, quality, effort })
+    const encoded = await self.squooshEncode(input, { target: t.params.target, quality, effort, lossless: t.params.lossless ?? false, chroma: t.params.chroma ?? '420' })
     postMessage({ type: 'done', id: t.id, name: t.name, data: encoded.data, bytes: encoded.data.byteLength, mime: encoded.mime } as SquooshMsg, { transfer: [encoded.data] })
   } catch (err: any) {
     postMessage({ type: 'error', id: t.id, error: String(err?.message ?? err) } as SquooshMsg)

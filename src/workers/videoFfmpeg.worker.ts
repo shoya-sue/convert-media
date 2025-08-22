@@ -14,6 +14,7 @@ export type VideoMsg =
   | { type: 'error'; id: string; error: string }
 
 let ffmpeg: any = null
+let durationSec: number | null = null
 
 self.onmessage = async (e: MessageEvent<VideoTask>) => {
   const t = e.data
@@ -22,9 +23,20 @@ self.onmessage = async (e: MessageEvent<VideoTask>) => {
       const { createFFmpeg } = FF as any
       ffmpeg = createFFmpeg({ corePath: '/wasm/ffmpeg/ffmpeg-core.js', log: true })
       ffmpeg.setLogger(({ message }) => {
-        if (typeof message === 'string' && message.includes('time=')) {
-          // 粗い進捗（任意）: 解析は実装次第
-          self.postMessage({ type: 'progress', id: t.id, ratio: 0.5 } as VideoMsg)
+        if (typeof message !== 'string') return
+        // Duration: 00:01:23.45
+        const d = message.match(/Duration:\s*(\d+):(\d+):(\d+\.?\d*)/)
+        if (d && !durationSec) {
+          const h = parseFloat(d[1]); const m = parseFloat(d[2]); const s = parseFloat(d[3])
+          durationSec = h*3600 + m*60 + s
+        }
+        // time=00:00:12.34
+        const m2 = message.match(/time=\s*(\d+):(\d+):(\d+\.?\d*)/)
+        if (m2 && durationSec) {
+          const h = parseFloat(m2[1]); const m = parseFloat(m2[2]); const s = parseFloat(m2[3])
+          const cur = h*3600 + m*60 + s
+          const ratio = Math.max(0, Math.min(0.99, cur / durationSec))
+          self.postMessage({ type: 'progress', id: t.id, ratio } as VideoMsg)
         }
       })
       await ffmpeg.load()

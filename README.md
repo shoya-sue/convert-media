@@ -40,7 +40,7 @@ flowchart LR
 | ルーティング | React Router | ページ遷移 | `src/routes/*` |
 | スタイル | CSS Modules | スタイル管理 | `src/styles/*` |
 | フォーム | React Hook Form + Zod | 入力/検証 | 各設定フォーム |
-| 画像処理 | `@squoosh/lib` | エンコード/リサイズ | 画像系ページ/Worker |
+| 画像処理 | Squoosh (自己ホスト) / Canvas | エンコード/リサイズ | 画像系ページ/Worker |
 | 動画処理 | `@ffmpeg/ffmpeg` | エンコード/スケール | 動画系ページ/Worker |
 | 一括DL | `jszip` | ZIP生成 | DL処理 |
 
@@ -52,9 +52,9 @@ flowchart LR
 
 | パス | 機能 | 主要ライブラリ | 備考 |
 |---|---|---|---|
-| `/image/compress` | 画像 圧縮 | `@squoosh/lib`, Canvas | 入力形式維持で再エンコード |
-| `/image/convert` | 画像 変換 | `@squoosh/lib` | 指定形式へ変換（JPEG/PNG/WebP/AVIF） |
-| `/image/resize` | 画像 リサイズ | `@squoosh/lib`, Canvas | リサイズ後にエンコード |
+| `/image/compress` | 画像 圧縮 | Squoosh/Canvas | 入力形式維持で再エンコード |
+| `/image/convert` | 画像 変換 | Squoosh/Canvas | 指定形式へ変換（JPEG/PNG/WebP） |
+| `/image/resize` | 画像 リサイズ | Squoosh/Canvas | リサイズ後にエンコード |
 | `/video/compress` | 動画 圧縮 | `@ffmpeg/ffmpeg` | H.264/AAC で容量削減 |
 | `/video/convert` | 動画 変換 | `@ffmpeg/ffmpeg` | MP4(H.264/AAC) or WEBM(VP9/Opus) |
 | `/video/resize` | 動画 リサイズ | `@ffmpeg/ffmpeg` | 長辺指定でスケール |
@@ -202,13 +202,24 @@ sequenceDiagram
 - OffscreenCanvas/convertToBlob 非対応でもメインスレッド圧縮に自動フォールバック（画像）。
 - Squoosh/ffmpeg.wasm 未配置でも機能は縮退しつつ動作（UIに状態表示）。
 
-### Squoosh 導入手順（任意・高度）
-- 目的: mozjpeg/oxipng/webp/avif のWASMで高効率圧縮を実現。
-- 手順（例）
-  - `public/wasm/squoosh/` に各コーデックの `.wasm`/`.js` を配置
-  - Worker初期化時に self へ `squooshEncode(bitmap, { target, quality, effort })` を提供（ラッパJSを自己ホスト）
-  - `imageSquoosh.worker.ts` は上記APIを呼ぶ。未初期化時はエラー→呼出側でフォールバック
-- 注意: バイナリ配布とライセンス表記に留意。CDNは使わず自己ホスト。
+### Squoosh 導入手順（社内ホスト）
+- 目的: mozjpeg/oxipng/webp/avif のWASMで高効率・高画質な圧縮/変換/リサイズを実現。
+- 手順
+  - `public/wasm/squoosh/` にコーデックWASM/JS一式＋`init.mjs` を配置（`init.mjs.example` 参照）。
+  - `init.mjs` は `export async function squooshEncode(bitmap, { target, quality, effort, lossless, chroma })` を提供。
+  - アプリは `/wasm/squoosh/init.mjs` の有無を自動判定し、存在時は Squoosh Worker を使用。無い場合はCanvasへ自動フォールバック。
+- 注意: バイナリ配布とライセンス表記、遅延ロード、COOP/COEP（任意）に留意。
+
+## 画像の高度設定（Squoosh有効時）
+- 努力度(effort): 0–9（高いほど高圧縮/高負荷）
+- ロスレス優先: PNG/WebPで可逆圧縮を優先
+- サブサンプリング: JPEGの4:2:0（既定）/4:4:4（色優先）
+- 未配置時はCanvasエンコードのみ（上記高度設定は無効化されるが、基本の品質/形式は適用）
+
+## 動画の高度設定
+- 変換: MP4(H.264/AAC) / WEBM(VP9/Opus)、CRF/プリセットを指定
+- リサイズ: 長辺指定、CRF/プリセット、FPS上限（必要時）
+- 進捗: ffmpegログのDuration/timeを解析して概算比率を表示
 
 ---
 

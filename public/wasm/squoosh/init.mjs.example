@@ -8,12 +8,18 @@ const g = typeof self !== 'undefined' ? self : globalThis
 // 以下は擬似コードです。実際には配布された Squoosh のバンドルに合わせて調整してください。
 // （@squoosh/lib や @squoosh/codecs のエントリを自己ホストし、ここで動的 import）
 
-export async function squooshEncode(bitmap, { target, quality = 0.9, effort = 4 }) {
-  // 例: 独自ビルドのエンコーダーローダ
-  // const { encodeImage } = await import('/wasm/squoosh/encode.mjs')
-  // const { data, mime } = await encodeImage(bitmap, { target, quality, effort })
-  // return { data, mime }
+// target: 'jpeg' | 'png' | 'webp' | 'avif'
+// options: { quality, effort, lossless, chroma }
+export async function squooshEncode(bitmap, { target, quality = 0.9, effort = 4, lossless = false, chroma = '420' } = {}) {
+  // 以下は社内配布のバンドル構成に合わせて実装してください。
+  // 例1) まとめてビルドされたエントリを動的import
+  //   const mod = await import('/wasm/squoosh/encode.mjs')
+  //   return await mod.encode(bitmap, { target, quality, effort, lossless, chroma })
 
-  throw new Error('squooshEncode is not wired. Please replace init.mjs.example with your implementation.')
+  // 例2) 各コーデックを個別に初期化して呼び出す
+  //   const encoders = await import('/wasm/squoosh/encoders.mjs')
+  //   const { data, mime } = await encoders.encode(bitmap, { target, quality, effort, lossless, chroma })
+  //   return { data, mime }
+
+  throw new Error('[Squoosh] init.mjs not implemented. Provide squooshEncode(bitmap, opts).')
 }
-

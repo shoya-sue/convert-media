@@ -17,7 +17,7 @@ export default function ImageCompress() {
     () =>
       z.object({
         format: z.enum(['auto', 'jpeg', 'png', 'webp']).default('auto'),
-        quality: z.number().min(0).max(1).default(0.75),
+        quality: z.number().min(0).max(1).default(0.88),
       }),
     []
   )
@@ -31,10 +31,19 @@ export default function ImageCompress() {
     setResults([])
     setProgress(0)
     const out: { name: string; blob: Blob; info: string }[] = []
-    const WorkerClass: any = (window as any).Worker ? new URL('../../workers/imageCompress.worker.ts', import.meta.url) : null
-    const canWorker = !!WorkerClass && 'OffscreenCanvas' in window
+    const squooshReady = await isSquooshAvailable()
+    const canWorker = 'Worker' in window && 'OffscreenCanvas' in window
 
-    if (canWorker) {
+    if (canWorker && squooshReady) {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const res = await runSquooshWorkerOnce(f, values)
+        const name = buildOutputName(f.name, values)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB`
+        out.push({ name, blob: new Blob([res.data], { type: res.mime }), info })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
+    } else if (canWorker) {
       for (let i = 0; i < files.length; i++) {
         const f = files[i]
         const res = await runWorkerOnce(f, values)
@@ -89,8 +98,24 @@ export default function ImageCompress() {
                 </select>
               </div>
               <div className="field">
-                <div className="field-label">品質: {Math.round((watch('quality') ?? 0.75) * 100)}</div>
+                <div className="field-label">品質: {Math.round((watch('quality') ?? 0.88) * 100)}</div>
                 <input className="range" type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
+              </div>
+              <div className="field">
+                <div className="field-label">努力度(effort)</div>
+                <select className="select" {...register('effort', { valueAsNumber: true })}>
+                  {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label><input type="checkbox" {...register('lossless')} /> ロスレス優先（PNG/WebPのみ）</label>
+              </div>
+              <div className="field">
+                <div className="field-label">サブサンプリング（JPEG）</div>
+                <select className="select" {...register('chroma')}>
+                  <option value="420">4:2:0（既定）</option>
+                  <option value="444">4:4:4（色優先）</option>
+                </select>
               </div>
             </div>
           </details>
@@ -187,4 +212,34 @@ async function runWorkerOnce(file: File, params: { format: 'auto' | 'jpeg' | 'pn
     }
     worker.postMessage(payload, { transfer: [data] })
   })
+}
+
+async function runSquooshWorkerOnce(file: File, params: { format: 'auto' | 'jpeg' | 'png' | 'webp'; quality: number; effort?: number; lossless?: boolean; chroma?: '420'|'444' }) {
+  const id = crypto.randomUUID()
+  const data = await file.arrayBuffer()
+  // format=auto は Squoosh 側では target 必須のため、推奨は webp か jpeg を選ぶ
+  const target = params.format === 'png' ? 'png' : params.format === 'jpeg' ? 'jpeg' : 'webp'
+  const worker = new Worker(new URL('../../workers/imageSquoosh.worker.ts', import.meta.url), { type: 'module' })
+  const payload = { id, name: file.name, type: file.type, data, params: { target, quality: params.quality, effort: params.effort ?? 4, lossless: params.lossless ?? false, chroma: params.chroma ?? '420'  } }
+  return new Promise<{ data: ArrayBuffer; bytes: number; mime: string }>((resolve, reject) => {
+    worker.onmessage = (e: MessageEvent<any>) => {
+      if (e.data?.type === 'done' && e.data?.id === id) {
+        worker.terminate()
+        resolve({ data: e.data.data, bytes: e.data.bytes, mime: e.data.mime })
+      } else if (e.data?.type === 'error' && e.data?.id === id) {
+        worker.terminate()
+        reject(new Error(e.data.error))
+      }
+    }
+    worker.postMessage(payload, { transfer: [data] })
+  })
+}
+
+async function isSquooshAvailable() {
+  try {
+    const res = await fetch('/wasm/squoosh/init.mjs', { method: 'HEAD' })
+    return res.ok
+  } catch {
+    return false
+  }
 }
