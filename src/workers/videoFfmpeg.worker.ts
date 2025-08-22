@@ -5,7 +5,7 @@ export type VideoTask = {
   name: string
   type: string
   data: ArrayBuffer
-  params: { crf: number; preset: string; maxLongEdge?: number | null; fpsCap?: number | null }
+  params: { crf: number; preset: string; maxLongEdge?: number | null; fpsCap?: number | null; target?: 'mp4'|'webm' }
 }
 
 export type VideoMsg =
@@ -36,17 +36,20 @@ self.onmessage = async (e: MessageEvent<VideoTask>) => {
       const L = t.params.maxLongEdge
       vf.push(`scale='if(gt(a,1),min(${L},iw),-2)':'if(gt(a,1),-2,min(${L},ih))'`)
     }
+    const target = t.params.target ?? 'mp4'
     const args = [
       '-i', 'input',
       ...(vf.length ? ['-vf', vf.join(',')] : []),
       ...(t.params.fpsCap ? ['-r', String(t.params.fpsCap)] : []),
-      '-c:v', 'libx264', '-crf', String(t.params.crf), '-preset', t.params.preset, '-pix_fmt', 'yuv420p',
-      '-c:a', 'aac', '-b:a', '128k',
-      '-movflags', '+faststart', 'output.mp4'
+      ...(target === 'mp4'
+        ? ['-c:v', 'libx264', '-crf', String(t.params.crf), '-preset', t.params.preset, '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', 'output.mp4']
+        : ['-c:v', 'libvpx-vp9', '-crf', String(Math.max(0, Math.min(63, t.params.crf + 9))), '-b:v', '0', '-c:a', 'libopus', '-b:a', '128k', 'output.webm']
+      )
     ]
     await ffmpeg.run(...args)
-    const out = ffmpeg.FS('readFile', 'output.mp4')
-    self.postMessage({ type: 'done', id: t.id, name: 'output.mp4', data: out.buffer, bytes: out.length, mime: 'video/mp4' } as VideoMsg, { transfer: [out.buffer] })
+    const outName = target === 'mp4' ? 'output.mp4' : 'output.webm'
+    const out = ffmpeg.FS('readFile', outName)
+    self.postMessage({ type: 'done', id: t.id, name: outName, data: out.buffer, bytes: out.length, mime: target === 'mp4' ? 'video/mp4' : 'video/webm' } as VideoMsg, { transfer: [out.buffer] })
   } catch (err: any) {
     self.postMessage({ type: 'error', id: t.id, error: String(err?.message ?? err) } as VideoMsg)
   }
