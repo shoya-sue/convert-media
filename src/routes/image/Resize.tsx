@@ -74,31 +74,31 @@ export default function ImageResize() {
         <div className="controls">
           <SizePresets onSelect={(px) => setValue('longEdge', px, { shouldDirty: true })} current={watch('longEdge') ?? 1920} />
         </div>
-          <div class="field">
-            <div class="field-label">出力形式</div>
-            <select class="select" {...register('format')}>
+          <div className="field">
+            <div className="field-label">出力形式</div>
+            <select className="select" {...register('format')}>
               <option value="auto">入力と同じ</option>
               <option value="jpeg">JPEG</option>
               <option value="png">PNG</option>
               <option value="webp">WebP</option>
             </select>
           </div>
-          <div class="field">
-            <div class="field-label">品質: {Math.round((watch('quality') ?? 0.9) * 100)}</div>
-            <input class="range" type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
+          <div className="field">
+            <div className="field-label">品質: {Math.round((watch('quality') ?? 0.9) * 100)}</div>
+            <input className="range" type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
           </div>
-          <div class="field">
-            <div class="field-label">努力度(effort)</div>
-            <select class="select" {...register('effort', { valueAsNumber: true })}>
+          <div className="field">
+            <div className="field-label">努力度(effort)</div>
+            <select className="select" {...register('effort', { valueAsNumber: true })}>
               {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>{i}</option>)}
             </select>
           </div>
-          <div class="field">
+          <div className="field">
             <label><input type="checkbox" {...register('lossless')} /> ロスレス優先（PNG/WebPのみ）</label>
           </div>
-          <div class="field">
-            <div class="field-label">サブサンプリング（JPEG）</div>
-            <select class="select" {...register('chroma')}>
+          <div className="field">
+            <div className="field-label">サブサンプリング（JPEG）</div>
+            <select className="select" {...register('chroma')}>
               <option value="420">4:2:0（既定）</option>
               <option value="444">4:4:4（色優先）</option>
             </select>
