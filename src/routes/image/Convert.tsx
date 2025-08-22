@@ -92,22 +92,25 @@ export default function ImageConvert() {
               <div className="field-label">品質: {Math.round((watch('quality') ?? 0.9) * 100)}</div>
               <input className="range" type="range" min={0} max={1} step={0.01} {...register('quality', { valueAsNumber: true })} />
             
-            <div className="field">
-              <div className="field-label">努力度(effort)</div>
-              <select className="select" {...register('effort', { valueAsNumber: true })}>
-                {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>{i}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label><input type="checkbox" {...register('lossless')} /> ロスレス優先（PNG/WebPのみ）</label>
-            </div>
-            <div className="field">
-              <div className="field-label">サブサンプリング（JPEG）</div>
-              <select className="select" {...register('chroma')}>
-                <option value="420">4:2:0（既定）</option>
-                <option value="444">4:4:4（色優先）</option>
-              </select>
-            </div>
+          <div className="field">
+            <div className="field-label">努力度(effort)</div>
+            <select className="select" {...register('effort', { valueAsNumber: true })}>
+              {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>{i}</option>)}
+            </select>
+            <div className="help">高いほど時間がかかるが、サイズが小さく/画質が安定しやすい</div>
+          </div>
+          <div className="field">
+            <label><input type="checkbox" {...register('lossless')} /> ロスレス優先（PNG/WebPのみ）</label>
+            <div className="help">画質劣化なしの可逆圧縮。サイズは大きくなりやすい</div>
+          </div>
+          <div className="field">
+            <div className="field-label">サブサンプリング（JPEG）</div>
+            <select className="select" {...register('chroma')}>
+              <option value="420">4:2:0（既定）</option>
+              <option value="444">4:4:4（色優先）</option>
+            </select>
+            <div className="help">4:2:0は一般的・軽量、4:4:4は色優先で高品質（サイズ増）</div>
+          </div>
           </div>
           </div>
           <button className="btn btn-primary" type="submit" disabled={!files.length}>変換開始</button>

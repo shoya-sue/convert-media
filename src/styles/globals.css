@@ -75,5 +75,6 @@ h1 { margin: 0 0 12px; font-size: 22px; letter-spacing: .2px; }
 /* Fields */
 .field { display: grid; gap: 6px; min-width: 240px; }
 .field .field-label { font-size: 12px; color: var(--muted); }
+.help { font-size: 12px; color: var(--muted); opacity: .9; }
 .select { appearance: none; background: rgba(255,255,255,0.04); color: var(--text); border: 1px solid var(--panel-stroke); border-radius: 10px; padding: 8px 10px; }
 .range { accent-color: var(--primary); width: 200px; }

@@ -106,9 +106,11 @@ export default function ImageCompress() {
                 <select className="select" {...register('effort', { valueAsNumber: true })}>
                   {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>{i}</option>)}
                 </select>
+                <div className="help">高いほど時間がかかるが、サイズが小さく/画質が安定しやすい</div>
               </div>
               <div className="field">
                 <label><input type="checkbox" {...register('lossless')} /> ロスレス優先（PNG/WebPのみ）</label>
+                <div className="help">画質劣化なしの可逆圧縮。サイズは大きくなりやすい</div>
               </div>
               <div className="field">
                 <div className="field-label">サブサンプリング（JPEG）</div>
@@ -116,6 +118,7 @@ export default function ImageCompress() {
                   <option value="420">4:2:0（既定）</option>
                   <option value="444">4:4:4（色優先）</option>
                 </select>
+                <div className="help">4:2:0は一般的・軽量、4:4:4は色優先で高品質（サイズ増）</div>
               </div>
             </div>
           </details>
