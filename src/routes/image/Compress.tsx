@@ -30,13 +30,27 @@ export default function ImageCompress() {
     setResults([])
     setProgress(0)
     const out: { name: string; blob: Blob; info: string }[] = []
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i]
-      const res = await compressImageFile(f, { ...values, avoidUpsize: true })
-      const name = buildOutputName(f.name, values)
-      const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
-      out.push({ name, blob: res.blob, info })
-      setProgress(Math.round(((i + 1) / files.length) * 100))
+    const WorkerClass: any = (window as any).Worker ? new URL('../../workers/imageCompress.worker.ts', import.meta.url) : null
+    const canWorker = !!WorkerClass && 'OffscreenCanvas' in window
+
+    if (canWorker) {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const res = await runWorkerOnce(f, values)
+        const name = buildOutputName(f.name, values)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
+        out.push({ name, blob: new Blob([res.data], { type: res.type ?? f.type }), info })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
+    } else {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const res = await compressImageFile(f, { ...values, avoidUpsize: true })
+        const name = buildOutputName(f.name, values)
+        const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
+        out.push({ name, blob: res.blob, info })
+        setProgress(Math.round(((i + 1) / files.length) * 100))
+      }
     }
     setResults(out)
   })
@@ -148,3 +162,22 @@ function PresetButtons({ onSelect, current }: { onSelect: (q: number) => void; c
 }
 
 // RHFのsetValueを使うため、直接DOMを触るハックは不要
+
+async function runWorkerOnce(file: File, params: { format: 'auto' | 'jpeg' | 'png' | 'webp'; quality: number }) {
+  const id = crypto.randomUUID()
+  const worker = new Worker(new URL('../../workers/imageCompress.worker.ts', import.meta.url), { type: 'module' })
+  const data = await file.arrayBuffer()
+  const payload = { id, name: file.name, type: file.type, data, params: { ...params, avoidUpsize: true } }
+  return new Promise<{ data: ArrayBuffer; bytes: number; usedOriginal: boolean; type: string }>((resolve, reject) => {
+    worker.onmessage = (e: MessageEvent<any>) => {
+      if (e.data?.type === 'done' && e.data?.id === id) {
+        worker.terminate()
+        resolve({ data: e.data.data, bytes: e.data.bytes, usedOriginal: e.data.usedOriginal, type: file.type })
+      } else if (e.data?.type === 'error' && e.data?.id === id) {
+        worker.terminate()
+        reject(new Error(e.data.error))
+      }
+    }
+    worker.postMessage(payload, { transfer: [data] })
+  })
+}

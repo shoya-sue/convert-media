@@ -175,11 +175,11 @@ sequenceDiagram
 
 | 項目 | 内容 |
 |---|---|
-| WASM配置 | `public/wasm/ffmpeg/ffmpeg-core.*`, `public/wasm/squoosh/*` |
-| 遅延ロード | 各ページで初回 `import()`、使用時にのみ読み込み |
-| 初期化例 | ffmpeg: `createFFmpeg({ corePath: '/wasm/ffmpeg/ffmpeg-core.js' })` |
-| Worker | `workers/ffmpegWorker.ts`, `workers/squooshWorker.ts` |
-| メッセージ型 | `{ type: 'start' | 'progress' | 'error' | 'done', payload }` |
+| WASM配置 | （将来）`public/wasm/ffmpeg/ffmpeg-core.*`, `public/wasm/squoosh/*` |
+| 遅延ロード | 各ページで初回 `import()`、使用時のみ読み込み |
+| 画像Worker | `workers/imageCompress.worker.ts`（OffscreenCanvas + convertToBlob）|
+| メッセージ型 | `progress/done/error`（id, bytes, usedOriginal など）|
+| 備考 | 非対応環境はメインスレッド実装へフォールバック |
 
 ---
 
