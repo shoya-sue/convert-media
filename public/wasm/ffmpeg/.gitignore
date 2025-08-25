@@ -1,0 +1,8 @@
+# ffmpeg.wasm files (large binary files)
+ffmpeg-core.js
+ffmpeg-core.wasm
+ffmpeg-core.worker.js
+
+# Keep README
+!README.md
+!.gitignore
