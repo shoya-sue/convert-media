@@ -26,13 +26,13 @@ self.onmessage = async (e: MessageEvent<SquooshTask>) => {
     const bitmap = await createImageBitmap(blob)
     if (!self.squooshEncode) {
       try {
-        const dyn = (p: string) => (0, eval)('import(p)')
-        const mod = await dyn('/wasm/squoosh/init.mjs')
+        // 動的インポートを直接使用
+        const mod = await import('/wasm/squoosh/init.mjs')
         if (mod && typeof (mod as any).squooshEncode === 'function') {
-          // @ts-ignore
           self.squooshEncode = (mod as any).squooshEncode
         }
-      } catch (_) {
+      } catch (error) {
+        console.error('Failed to load Squoosh:', error)
         // 後段で未初期化エラーへ
       }
     }

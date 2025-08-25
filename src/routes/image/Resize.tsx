@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { resizeImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
-import ImagePreview from '../../components/ImagePreview'
 import BeforeAfter from '../../components/BeforeAfter'
 import { loadJSON, saveJSON } from '../../lib/persist'
 
@@ -153,8 +152,13 @@ export default function ImageResize() {
       )}
       {files.length === 1 && results.length === 1 && (
         <div className="card">
-          <h3>プレビュー</h3>
-          <BeforeAfter before={files[0]} after={results[0].blob} />
+          <h3>リサイズ結果の比較</h3>
+          <BeforeAfter 
+            before={files[0]} 
+            after={results[0].blob} 
+            originalSize={files[0].size}
+            compressedSize={results[0].blob.size}
+          />
         </div>
       )}
       {squooshAvail === false && (

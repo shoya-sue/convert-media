@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import { ImagePreview } from '../ImagePreview'
+import ImagePreview from '../ImagePreview'
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')

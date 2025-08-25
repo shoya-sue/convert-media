@@ -1,14 +1,14 @@
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { compressImageFile } from '../../lib/image'
 import { zipBlobs } from '../../lib/zip'
-import ImagePreview from '../../components/ImagePreview'
 import BeforeAfter from '../../components/BeforeAfter'
 import { loadJSON, saveJSON } from '../../lib/persist'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 
 export default function ImageCompress() {
   const [files, setFiles] = useState<File[]>([])
@@ -22,6 +22,9 @@ export default function ImageCompress() {
       z.object({
         format: z.enum(['auto', 'jpeg', 'png', 'webp']).default('auto'),
         quality: z.number().min(0).max(1).default(0.88),
+        effort: z.number().optional(),
+        lossless: z.boolean().optional(),
+        chroma: z.string().optional(),
       }),
     []
   )
@@ -36,7 +39,7 @@ export default function ImageCompress() {
     return () => sub.unsubscribe()
   },[watch])
 
-  const onProcess = handleSubmit(async (values) => {
+  const processImages = async (values: any) => {
     setResults([])
     setProgress(0)
     const out: { name: string; blob: Blob; info: string; reduction: number; orig: number; out: number }[] = []
@@ -46,12 +49,22 @@ export default function ImageCompress() {
     if (canWorker && squooshReady) {
       for (let i = 0; i < files.length; i++) {
         const f = files[i]
-        const res = await runSquooshWorkerOnce(f, values)
-        const name = buildOutputName(f.name, values)
-        const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB`
-        const outBlob = new Blob([res.data], { type: res.mime })
-        const reduction = Math.max(0, 1 - outBlob.size / f.size)
-        out.push({ name, blob: outBlob, info, reduction, orig: f.size, out: outBlob.size })
+        try {
+          const res = await runSquooshWorkerOnce(f, values)
+          const name = buildOutputName(f.name, values)
+          const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB`
+          const outBlob = new Blob([res.data], { type: res.mime })
+          const reduction = Math.max(0, 1 - outBlob.size / f.size)
+          out.push({ name, blob: outBlob, info, reduction, orig: f.size, out: outBlob.size })
+        } catch (error) {
+          // Squooshが失敗した場合、Canvas APIにフォールバック
+          const res = await runWorkerOnce(f, values)
+          const name = buildOutputName(f.name, values)
+          const info = `${(f.size/1024).toFixed(1)}KB → ${(res.bytes/1024).toFixed(1)}KB${res.usedOriginal ? '（元のまま）' : ''}`
+          const outBlob = new Blob([res.data], { type: res.type ?? f.type })
+          const reduction = Math.max(0, 1 - outBlob.size / f.size)
+          out.push({ name, blob: outBlob, info, reduction, orig: f.size, out: outBlob.size })
+        }
         setProgress(Math.round(((i + 1) / files.length) * 100))
       }
     } else if (canWorker) {
@@ -78,7 +91,7 @@ export default function ImageCompress() {
     }
     // 削減率の高い順に並べ替え
     setResults(out.sort((a,b)=> (b.reduction ?? 0) - (a.reduction ?? 0)))
-  })
+  }
 
   const onDownloadAll = async () => {
     const zip = await zipBlobs(results)
@@ -90,6 +103,41 @@ export default function ImageCompress() {
     URL.revokeObjectURL(url)
   }
 
+  const [isProcessing, setIsProcessing] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  // キーボードショートカット
+  useKeyboardShortcuts({
+    onEnter: () => {
+      if (files.length > 0 && !isProcessing) {
+        formRef.current?.requestSubmit()
+      }
+    },
+    onEscape: () => {
+      if (!isProcessing) {
+        setFiles([])
+        setResults([])
+        setProgress(0)
+      }
+    },
+    onSave: () => {
+      if (results.length > 0) {
+        onDownloadAll()
+      }
+    },
+    enabled: true,
+  })
+
+  // フォーム送信ハンドラー
+  const onProcess = handleSubmit(async (values) => {
+    setIsProcessing(true)
+    try {
+      await processImages(values)
+    } finally {
+      setIsProcessing(false)
+    }
+  })
+
   return (
     <div className="stack">
       <div className="card">
@@ -99,7 +147,7 @@ export default function ImageCompress() {
           <PresetButtons onSelect={(q) => setValue('quality', q, { shouldDirty: true })} current={watch('quality') ?? 0.88} />
         </div>
         <Dropzone accept="image/*" onFiles={setFiles} files={files} />
-        <form className="controls" onSubmit={onProcess}>
+        <form ref={formRef} className="controls" onSubmit={onProcess}>
           <details>
             <summary className="muted">詳細設定</summary>
             <div className="controls">
@@ -137,7 +185,13 @@ export default function ImageCompress() {
               </div>
             </div>
           </details>
-          <button className="btn btn-primary" type="submit" disabled={!files.length}>処理開始</button>
+          <button 
+            className="btn btn-primary" 
+            type="submit" 
+            disabled={!files.length || isProcessing}
+          >
+            {isProcessing ? '処理中...' : '処理開始'}
+          </button>
         </form>
         <ProgressBar value={progress} />
       </div>
@@ -164,8 +218,13 @@ export default function ImageCompress() {
       )}
       {files.length === 1 && results.length === 1 && (
         <div className="card">
-          <h3>プレビュー</h3>
-          <BeforeAfter before={files[0]} after={results[0].blob} />
+          <h3>プレビュー比較</h3>
+          <BeforeAfter 
+            before={files[0]} 
+            after={results[0].blob} 
+            originalSize={files[0].size}
+            compressedSize={results[0].blob.size}
+          />
         </div>
       )}
     </div>
@@ -261,10 +320,13 @@ async function runSquooshWorkerOnce(file: File, params: { format: 'auto' | 'jpeg
 }
 
 async function isSquooshAvailable() {
-  try {
-    const res = await fetch('/wasm/squoosh/init.mjs', { method: 'HEAD' })
-    return res.ok
-  } catch {
-    return false
-  }
+  // 現時点ではSquooshは利用不可として扱う（WASMファイルが配置されていないため）
+  return false
+  // 将来的にSquooshを有効にする場合は以下のコメントを解除
+  // try {
+  //   const res = await fetch('/wasm/squoosh/init.mjs', { method: 'HEAD' })
+  //   return res.ok
+  // } catch {
+  //   return false
+  // }
 }
