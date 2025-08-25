@@ -6,8 +6,11 @@ import ImageResize from './routes/image/Resize'
 import VideoCompress from './routes/video/Compress'
 import VideoConvert from './routes/video/Convert'
 import VideoResize from './routes/video/Resize'
+import { useGlobalShortcuts } from './hooks/useKeyboardShortcuts'
 
 export default function App() {
+  // グローバルキーボードショートカット（ヘルプ表示）
+  useGlobalShortcuts()
   return (
     <div className="layout">
       <aside className="sidebar">
