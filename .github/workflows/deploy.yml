@@ -73,88 +73,41 @@ jobs:
           mv /tmp/convert-media-deploy/* /var/www/vhosts/convert.sho43.xyz/
           rm -rf /tmp/convert-media-deploy
           
-          # Set permissions to deploy:wheel
-          chown -R deploy:wheel /var/www/vhosts/convert.sho43.xyz/
+          # Set permissions
           chmod -R 755 /var/www/vhosts/convert.sho43.xyz/
           
-          # Check web server and create config
-          if command -v nginx >/dev/null 2>&1; then
-            # Nginx configuration
-            NGINX_CONF_DIR="/etc/nginx"
-            if [ -d "$NGINX_CONF_DIR/conf.d" ]; then
-              cat > "$NGINX_CONF_DIR/conf.d/convert.sho43.xyz.conf" << 'EOF'
-          server {
-              listen 80;
-              listen [::]:80;
-              server_name convert.sho43.xyz;
-              
-              root /var/www/vhosts/convert.sho43.xyz;
-              index index.html index.htm;
-              
-              # Handle SPA routing
-              location / {
-                  try_files $uri $uri/ /index.html;
-              }
-              
-              # Cache static assets
-              location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
-                  expires 1y;
-                  add_header Cache-Control "public, immutable";
-              }
-              
-              # Security headers
-              add_header X-Frame-Options "SAMEORIGIN" always;
-              add_header X-Content-Type-Options "nosniff" always;
-              add_header X-XSS-Protection "1; mode=block" always;
-          }
+          # Create .htaccess for Apache SPA routing (if Apache is used)
+          cat > /var/www/vhosts/convert.sho43.xyz/.htaccess << 'EOF'
+          <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+            RewriteRule ^index\.html$ - [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule . /index.html [L]
+          </IfModule>
+          
+          # Cache control for static assets
+          <IfModule mod_expires.c>
+            ExpiresActive On
+            ExpiresByType image/jpg "access plus 1 year"
+            ExpiresByType image/jpeg "access plus 1 year"
+            ExpiresByType image/gif "access plus 1 year"
+            ExpiresByType image/png "access plus 1 year"
+            ExpiresByType image/svg+xml "access plus 1 year"
+            ExpiresByType text/css "access plus 1 year"
+            ExpiresByType application/javascript "access plus 1 year"
+            ExpiresByType application/font-woff2 "access plus 1 year"
+          </IfModule>
+          
+          # Security headers
+          <IfModule mod_headers.c>
+            Header set X-Frame-Options "SAMEORIGIN"
+            Header set X-Content-Type-Options "nosniff"
+            Header set X-XSS-Protection "1; mode=block"
+          </IfModule>
           EOF
-              nginx -t && systemctl reload nginx
-            fi
-          elif command -v httpd >/dev/null 2>&1 || command -v apache2 >/dev/null 2>&1; then
-            # Apache configuration
-            APACHE_CONF_DIR=""
-            if [ -d "/etc/httpd/conf.d" ]; then
-              APACHE_CONF_DIR="/etc/httpd/conf.d"
-            elif [ -d "/etc/apache2/sites-available" ]; then
-              APACHE_CONF_DIR="/etc/apache2/sites-available"
-            fi
-            
-            if [ -n "$APACHE_CONF_DIR" ]; then
-              cat > "$APACHE_CONF_DIR/convert.sho43.xyz.conf" << 'EOF'
-          <VirtualHost *:80>
-              ServerName convert.sho43.xyz
-              DocumentRoot /var/www/vhosts/convert.sho43.xyz
-              
-              <Directory /var/www/vhosts/convert.sho43.xyz>
-                  Options -Indexes +FollowSymLinks
-                  AllowOverride All
-                  Require all granted
-              </Directory>
-              
-              # Handle SPA routing
-              FallbackResource /index.html
-              
-              # Cache static assets
-              <FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$">
-                  Header set Cache-Control "max-age=31536000, public, immutable"
-              </FilesMatch>
-              
-              # Security headers
-              Header always set X-Frame-Options "SAMEORIGIN"
-              Header always set X-Content-Type-Options "nosniff"
-              Header always set X-XSS-Protection "1; mode=block"
-          </VirtualHost>
-          EOF
-              
-              # Enable site if using Apache2
-              if command -v a2ensite >/dev/null 2>&1; then
-                a2ensite convert.sho43.xyz.conf
-                a2enmod headers rewrite
-                systemctl reload apache2
-              else
-                systemctl reload httpd
-              fi
-            fi
-          else
-            echo "Warning: No web server (nginx/apache) detected. Skipping web server configuration."
-          fi
+          
+          echo "Deployment completed successfully!"
+          echo "Files deployed to: /var/www/vhosts/convert.sho43.xyz/"
+          echo "Site should be accessible at: https://convert.sho43.xyz"
