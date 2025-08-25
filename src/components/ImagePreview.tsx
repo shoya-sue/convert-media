@@ -1,11 +1,25 @@
+import React from 'react'
+
 type Props = {
-  before: Blob
-  after: Blob
+  before: Blob | File
+  after: Blob | File
 }
 
 export default function ImagePreview({ before, after }: Props) {
-  const beforeUrl = URL.createObjectURL(before)
-  const afterUrl = URL.createObjectURL(after)
+  const [beforeUrl, setBeforeUrl] = React.useState<string>('')
+  const [afterUrl, setAfterUrl] = React.useState<string>('')
+  
+  React.useEffect(() => {
+    const bUrl = URL.createObjectURL(before)
+    const aUrl = URL.createObjectURL(after)
+    setBeforeUrl(bUrl)
+    setAfterUrl(aUrl)
+    
+    return () => {
+      URL.revokeObjectURL(bUrl)
+      URL.revokeObjectURL(aUrl)
+    }
+  }, [before, after])
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
       <figure className="card" style={{ padding: 8 }}>
