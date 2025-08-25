@@ -201,6 +201,32 @@ sequenceDiagram
 
 ---
 
+## デプロイ設定
+
+### GitHub Secretsの設定
+
+以下のSecretsをGitHubリポジトリに設定してください：
+
+1. **VPS_HOST**: ConoHa VPSのIPアドレス
+2. **VPS_USERNAME**: SSHユーザー名（通常は`root`）
+3. **VPS_SSH_KEY**: SSH秘密鍵の内容
+4. **VPS_PORT**: SSHポート（デフォルト: 22）
+
+### 自動デプロイ
+
+- mainブランチへのpushで自動的にビルド・デプロイが実行されます
+- デプロイ先: `/var/www/vhosts/convert.sho43.xyz/`
+- URL: https://convert.sho43.xyz
+
+### 手動デプロイ
+
+```bash
+npm run build
+scp -r dist/* user@your-vps:/var/www/vhosts/convert.sho43.xyz/
+```
+
+---
+
 ## トラブルシューティング
 
 ### ボタンがクリックできない場合
