@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Dropzone from '../../components/Dropzone'
 import ProgressBar from '../../components/ProgressBar'
 import { createVideoThumbnail, createVideoThumbnails } from '../../lib/video'
 import { loadNumber, saveNumber } from '../../lib/persist'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 
 export default function VideoCompress() {
   const [files, setFiles] = useState<File[]>([])
@@ -23,6 +24,36 @@ export default function VideoCompress() {
       .then((r) => setAvailable(r.ok))
       .catch(() => setAvailable(false))
   }
+
+  // キーボードショートカット
+  useKeyboardShortcuts({
+    onEnter: () => {
+      if (files.length > 0 && !running && available !== false) {
+        onStart(files, crf, setProgress, setRunning, setResults)
+      }
+    },
+    onEscape: () => {
+      if (!running) {
+        setFiles([])
+        setResults([])
+        setProgress(0)
+        setThumb(null)
+        setThumbs([])
+      }
+    },
+    onSave: () => {
+      if (results.length > 0) {
+        // バッチダウンロード（複数ファイルの場合はZIPにする必要があるが、現在は個別ダウンロードのみ）
+        results.forEach(r => {
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(r.blob)
+          a.download = r.name
+          a.click()
+        })
+      }
+    },
+    enabled: true,
+  })
 
   return (
     <div className="stack">
