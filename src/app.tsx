@@ -7,6 +7,7 @@ import VideoCompress from './routes/video/Compress'
 import VideoConvert from './routes/video/Convert'
 import VideoResize from './routes/video/Resize'
 import { useGlobalShortcuts } from './hooks/useKeyboardShortcuts'
+import logoImg from './assets/logo.png'
 
 export default function App() {
   // グローバルキーボードショートカット（ヘルプ表示）
@@ -14,17 +15,16 @@ export default function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <Link to="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Link to="/" className="brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img 
-            src="/logo.png" 
+            src={logoImg} 
             alt="Convert Media" 
             style={{ 
-              height: 32, 
+              height: 40, 
               width: 'auto',
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
             }} 
           />
-          <span>convert-media</span>
         </Link>
         <Sidebar />
       </aside>
@@ -48,7 +48,7 @@ function Welcome() {
   return (
     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
       <img 
-        src="/logo.png" 
+        src={logoImg} 
         alt="Convert Media" 
         style={{ 
           maxWidth: 200,
@@ -64,20 +64,30 @@ function Welcome() {
       <p style={{ marginTop: 24, color: '#666' }}>
         左メニューから機能を選択してください（1ページ=1機能）
       </p>
-      <div style={{ marginTop: 40, padding: 20, backgroundColor: '#f5f5f5', borderRadius: 8, maxWidth: 600, marginLeft: 'auto', marginRight: 'auto' }}>
-        <h3 style={{ marginBottom: 16 }}>🚀 クイックスタート</h3>
+      <div style={{ 
+        marginTop: 40, 
+        padding: 20, 
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        borderRadius: 8, 
+        maxWidth: 600, 
+        marginLeft: 'auto', 
+        marginRight: 'auto',
+        backdropFilter: 'blur(10px)'
+      }}>
+        <h3 style={{ marginBottom: 16, color: '#fff' }}>🚀 クイックスタート</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, textAlign: 'left' }}>
           <div>
-            <strong>📷 画像処理</strong>
-            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+            <strong style={{ color: '#14f1c6', fontSize: 15 }}>📷 画像処理</strong>
+            <ul style={{ marginTop: 8, paddingLeft: 20, color: '#e0e0e0' }}>
               <li>圧縮: ファイルサイズを削減</li>
               <li>変換: 形式を変更（JPEG/PNG/WebP）</li>
               <li>リサイズ: 寸法を変更</li>
             </ul>
           </div>
           <div>
-            <strong>🎬 動画処理</strong>
-            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+            <strong style={{ color: '#a78bfa', fontSize: 15 }}>🎬 動画処理</strong>
+            <ul style={{ marginTop: 8, paddingLeft: 20, color: '#e0e0e0' }}>
               <li>圧縮: 容量を削減</li>
               <li>変換: MP4/WebMへ変換</li>
               <li>リサイズ: 解像度を変更</li>

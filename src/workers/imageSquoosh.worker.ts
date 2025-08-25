@@ -25,16 +25,8 @@ self.onmessage = async (e: MessageEvent<SquooshTask>) => {
     const blob = new Blob([t.data], { type: t.type })
     const bitmap = await createImageBitmap(blob)
     if (!self.squooshEncode) {
-      try {
-        // 動的インポートを直接使用
-        const mod = await import('/wasm/squoosh/init.mjs')
-        if (mod && typeof (mod as any).squooshEncode === 'function') {
-          self.squooshEncode = (mod as any).squooshEncode
-        }
-      } catch (error) {
-        console.error('Failed to load Squoosh:', error)
-        // 後段で未初期化エラーへ
-      }
+      // Squooshは現在無効化されているため、常にエラーを投げる
+      // 将来的にSquooshを有効にする場合はここでimportを行う
     }
     if (!self.squooshEncode) throw new Error('Squoosh codecs are not initialized')
     const quality = t.params.quality ?? 0.9
