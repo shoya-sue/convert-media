@@ -1,0 +1,249 @@
+/* VideoPreview Component Styles */
+
+.preview {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.videoContainer {
+  position: relative;
+  width: 100%;
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* カスタムコントロール */
+.customControls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: white;
+}
+
+.playButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.playButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.progressBar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.progress {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.1s;
+}
+
+.time {
+  font-size: 12px;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* 比較モード */
+.comparison {
+  width: 100%;
+}
+
+.comparisonContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.comparisonItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comparisonItem h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* サムネイルプレビュー */
+.thumbnailPreview {
+  width: 100%;
+}
+
+.thumbnailPreview h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.thumbnailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.thumbnailItem {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnailItem img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.downloadLink {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.downloadLink:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* ファイル情報 */
+.info {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.sizeComparison {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.arrow {
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.sizeInfo {
+  padding: 8px;
+  background: var(--background);
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.reduction {
+  margin-left: 8px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.reductionBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+/* ダウンロードボタン */
+.downloadButton {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.downloadButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .comparisonContainer {
+    grid-template-columns: 1fr;
+  }
+  
+  .thumbnailGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .sizeComparison {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .arrow {
+    display: none;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .videoContainer {
+    background: var(--surface-dark);
+  }
+  
+  .info {
+    background: var(--surface-dark);
+  }
+  
+  .thumbnailItem {
+    background: var(--surface-dark);
+  }
+}
