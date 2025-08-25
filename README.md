@@ -198,6 +198,30 @@ sequenceDiagram
   - 推奨: こちらもCOOP/COEP（任意）。
   
 ### ffmpeg.wasm 配置手順
+
+---
+
+## トラブルシューティング
+
+### ボタンがクリックできない場合
+
+1. **ブラウザキャッシュのクリア**
+   - Mac: Command + Shift + R
+   - Windows/Linux: Ctrl + Shift + R
+   - または開発者ツール → Network → "Disable cache" にチェック
+
+2. **Viteキャッシュのクリア**
+   ```bash
+   rm -rf node_modules/.vite
+   npm run dev
+   ```
+
+3. **デバッグ確認**
+   - 開発者ツールのConsoleタブを開く
+   - ファイルを選択してボタンをクリック
+   - エラーメッセージを確認
+
+### ffmpeg.wasm 配置手順
 ```bash
 # オプション1: npm パッケージから取得
 npm install @ffmpeg/core
