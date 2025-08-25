@@ -14,7 +14,18 @@ export default function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <Link to="/" className="brand">convert-media</Link>
+        <Link to="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img 
+            src="/logo.png" 
+            alt="Convert Media" 
+            style={{ 
+              height: 32, 
+              width: 'auto',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+            }} 
+          />
+          <span>convert-media</span>
+        </Link>
         <Sidebar />
       </aside>
       <main className="content">
@@ -35,9 +46,45 @@ export default function App() {
 
 function Welcome() {
   return (
-    <div>
-      <h1>ようこそ</h1>
-      <p>左メニューから機能を選択してください（1ページ=1機能）。</p>
+    <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+      <img 
+        src="/logo.png" 
+        alt="Convert Media" 
+        style={{ 
+          maxWidth: 200,
+          height: 'auto',
+          marginBottom: 32,
+          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
+        }} 
+      />
+      <h1>Convert Media へようこそ</h1>
+      <p style={{ fontSize: 18, marginTop: 16 }}>
+        画像・動画の変換ツール
+      </p>
+      <p style={{ marginTop: 24, color: '#666' }}>
+        左メニューから機能を選択してください（1ページ=1機能）
+      </p>
+      <div style={{ marginTop: 40, padding: 20, backgroundColor: '#f5f5f5', borderRadius: 8, maxWidth: 600, marginLeft: 'auto', marginRight: 'auto' }}>
+        <h3 style={{ marginBottom: 16 }}>🚀 クイックスタート</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, textAlign: 'left' }}>
+          <div>
+            <strong>📷 画像処理</strong>
+            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+              <li>圧縮: ファイルサイズを削減</li>
+              <li>変換: 形式を変更（JPEG/PNG/WebP）</li>
+              <li>リサイズ: 寸法を変更</li>
+            </ul>
+          </div>
+          <div>
+            <strong>🎬 動画処理</strong>
+            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+              <li>圧縮: 容量を削減</li>
+              <li>変換: MP4/WebMへ変換</li>
+              <li>リサイズ: 解像度を変更</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
