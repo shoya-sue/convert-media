@@ -1,93 +1,67 @@
-# ffmpeg.wasm ファイル配置ガイド
+# ffmpeg.wasm配置手順
 
-このディレクトリには ffmpeg.wasm の実行に必要なファイルを配置してください。
+このディレクトリに ffmpeg.wasm の必要ファイルを配置してください。
 
-## 必要なファイル
+## 必要ファイル
 
-以下のファイルをこのディレクトリに配置する必要があります：
+以下のファイルを配置する必要があります：
 
-1. **ffmpeg-core.js** - ffmpeg.wasm のメインJavaScriptファイル
-2. **ffmpeg-core.wasm** - WebAssemblyバイナリファイル
-3. **ffmpeg-core.worker.js** - Workerスクリプトファイル
+- `ffmpeg-core.js`
+- `ffmpeg-core.wasm`
+- `ffmpeg-core.worker.js`
 
 ## 入手方法
 
-### オプション1: npm パッケージから取得
+### 方法1: npmパッケージから取得
 
 ```bash
-# @ffmpeg/core パッケージをインストール
-npm install @ffmpeg/core
-
-# ファイルをコピー
-cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js ./
-cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm ./
-cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.worker.js ./
+npm install @ffmpeg/ffmpeg @ffmpeg/core
 ```
 
-### オプション2: CDN から直接ダウンロード
+その後、`node_modules/@ffmpeg/core/dist/` から必要ファイルをコピー：
 
 ```bash
-# ffmpeg-core.js
-curl -O https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js
-
-# ffmpeg-core.wasm
-curl -O https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm
-
-# ffmpeg-core.worker.js
-curl -O https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.worker.js
+# プロジェクトルートで実行
+cp node_modules/@ffmpeg/core/dist/ffmpeg-core.js public/wasm/ffmpeg/
+cp node_modules/@ffmpeg/core/dist/ffmpeg-core.wasm public/wasm/ffmpeg/
+cp node_modules/@ffmpeg/core/dist/ffmpeg-core.worker.js public/wasm/ffmpeg/
 ```
 
-### オプション3: 公式リリースから取得
+### 方法2: CDNから直接ダウンロード
 
-[FFmpeg.wasm GitHub Releases](https://github.com/ffmpegwasm/ffmpeg.wasm/releases) から最新版をダウンロードしてください。
+```bash
+cd public/wasm/ffmpeg/
 
-## ファイル配置後の確認
-
-ファイルを配置した後、以下の構造になっていることを確認してください：
-
-```
-public/wasm/ffmpeg/
-├── README.md (このファイル)
-├── ffmpeg-core.js
-├── ffmpeg-core.wasm
-└── ffmpeg-core.worker.js
+# 最新版のダウンロード（例: v0.12.x）
+curl -o ffmpeg-core.js https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js
+curl -o ffmpeg-core.wasm https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.wasm
+curl -o ffmpeg-core.worker.js https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.worker.js
 ```
 
-## 動作確認
+## 配置完了の確認
 
-1. 開発サーバーを起動：
-   ```bash
-   npm run dev
-   ```
+配置後、以下のコマンドで確認できます：
 
-2. ブラウザで動画処理ページ（圧縮/変換/リサイズ）を開く
+```bash
+ls -la public/wasm/ffmpeg/
+```
 
-3. ffmpeg.wasm が正常に読み込まれていれば、動画処理機能が有効になります
-
-## トラブルシューティング
-
-### ファイルが読み込まれない場合
-
-1. ファイル名が正確であることを確認
-2. ファイルのパーミッションを確認（読み取り可能であること）
-3. ブラウザの開発者ツールでネットワークエラーを確認
-
-### CORS エラーが発生する場合
-
-ローカル開発環境では通常問題ありませんが、本番環境では以下のヘッダーが必要な場合があります：
+次のような出力になれば成功です：
 
 ```
-Cross-Origin-Embedder-Policy: require-corp
-Cross-Origin-Opener-Policy: same-origin
+-rw-r--r--  1 user user  xxxxx ffmpeg-core.js
+-rw-r--r--  1 user user  xxxxx ffmpeg-core.wasm
+-rw-r--r--  1 user user  xxxxx ffmpeg-core.worker.js
 ```
+
+## 注意事項
+
+- これらのファイルは合計で数十MBになります
+- `.gitignore`により Git には含まれません
+- 本番環境でも同様に配置が必要です
+- ファイルが配置されていない場合、動画機能は無効状態で表示されます
 
 ## ライセンス
 
-ffmpeg.wasm は LGPL 2.1 ライセンスで提供されています。
-詳細は [ffmpeg.wasm のライセンス](https://github.com/ffmpegwasm/ffmpeg.wasm/blob/main/LICENSE) をご確認ください。
-
-## セキュリティ上の注意
-
-- WASMファイルは信頼できるソースから取得してください
-- 定期的に最新版へ更新することを推奨します
-- 本番環境では整合性チェック（SRI）の使用を検討してください
+ffmpeg.wasmのライセンスについては公式リポジトリを参照してください：
+https://github.com/ffmpegwasm/ffmpeg.wasm
